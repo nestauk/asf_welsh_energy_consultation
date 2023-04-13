@@ -57,6 +57,11 @@ def get_countries():
 
 
 def get_mcs_domestic():
+    """Get domestic MCS data.
+
+    Returns:
+        pd.DataFrame: Domestic MCS installation records.
+    """
     mcs = pd.read_csv(PROJECT_DIR / local_mcs_path)
 
     mcs["installation_type"] = mcs["installation_type"].fillna(
@@ -68,6 +73,11 @@ def get_mcs_domestic():
 
 
 def get_offgas():
+    """Get dataset of off-gas-grid postcodes.
+
+    Returns:
+        pd.DataFrame: Dataframe containing off-gas postcodes.
+    """
     og = pd.read_excel(
         PROJECT_DIR / off_gas_path,
         sheet_name="Off Gas Live PostCodes 22",
@@ -81,6 +91,13 @@ def get_offgas():
 
 
 def get_rurality():
+    """Get dataset of postcodes and their rurality indices.
+    Two codes are used - the more specific 10-fold code, and the less specific
+    two-fold code ("rural"/"urban").
+
+    Returns:
+        pd.DataFrame: Dataset with postcodes and ruralities.
+    """
     oa = pd.read_csv(
         PROJECT_DIR / oa_path, encoding="latin-1"
     )  # latin-1 as otherwise invalid byte
@@ -121,6 +138,11 @@ def get_rurality():
 
 
 def get_wales_epc():
+    """Get Welsh EPC data (processed but not deduplicated).
+
+    Returns:
+        pd.DataFrame: Welsh preprocessed EPC data.
+    """
     wales_epc = load_preprocessed_epc_data(
         data_path=LOCAL_DATA_DIR, usecols=None, version="preprocessed", subset="Wales"
     )
@@ -129,6 +151,11 @@ def get_wales_epc():
 
 
 def get_mcs_epc_domestic():
+    """Get domestic MCS installations joined with EPC data.
+
+    Returns:
+        pd.DataFrame: Domestic MCS-EPC data.
+    """
     mcs_epc = pd.read_csv(PROJECT_DIR / local_mcs_epc_path)
     mcs_epc["commission_date"] = pd.to_datetime(mcs_epc["commission_date"])
     mcs_epc["INSPECTION_DATE"] = pd.to_datetime(mcs_epc["INSPECTION_DATE"])
@@ -144,6 +171,11 @@ def get_mcs_epc_domestic():
 
 
 def get_electric_tenure():
+    """Get census 2021 data on electric heating vs tenure.
+
+    Returns:
+        pd.DataFrame: Dataset of tenure counts for properties on electric heating.
+    """
     data = pd.read_csv(PROJECT_DIR / tenure_path)
 
     data = data[

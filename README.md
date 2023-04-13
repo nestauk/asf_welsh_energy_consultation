@@ -19,6 +19,7 @@ The remainder of the charts in the response can be produced from code in the rep
 - Install requirements: `pip install -r requirements.txt`
 - Download the data:
   - `make inputs-pull` will pull the zipped data from S3 and put it in `/inputs`
+  - Download `mcs_installations_230315.csv` and `mcs_installations_epc_full_230315.csv` from `asf-core-data` and add them to `inputs/data/`
 - Perform additional setup in order to save plots:
 
   - Follow the instructions here - you may just need to run `conda install -c conda-forge vega-cli vega-lite-cli`
