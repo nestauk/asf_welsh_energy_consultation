@@ -24,6 +24,8 @@ The remainder of the charts in the response can be produced from code in the rep
 
   - Follow the instructions here - you may just need to run `conda install -c conda-forge vega-cli vega-lite-cli`
 
+- Change `LOCAL_DATA_DIR` in `getters/get_data.py` to your local EPC data folder.
+
 - Run `python analysis/produce_plots.py`. This should generate six plots:
   - `cumulative_retrofits.png`
   - `electric_tenure.png`
