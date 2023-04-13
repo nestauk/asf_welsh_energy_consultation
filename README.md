@@ -26,7 +26,7 @@ The remainder of the charts in the response can be produced from code in the rep
 
 - Change `LOCAL_DATA_DIR` in `getters/get_data.py` to your local EPC data folder.
 
-- Run `python analysis/produce_plots.py`. This should generate six plots:
+- Run `python asf_welsh_energy_consultation/analysis/produce_plots.py`. This should generate six plots:
   - `cumulative_retrofits.png`
   - `electric_tenure.png`
   - `installations_by_gas_status.png`
