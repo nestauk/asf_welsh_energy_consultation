@@ -1,3 +1,8 @@
+# File: asf_welsh_energy_consultation/pipeline/process_data.py
+"""
+Functions to process and augment data.
+"""
+
 import pandas as pd
 
 from asf_welsh_energy_consultation.getters.get_data import *

@@ -1,3 +1,8 @@
+# File: asf_welsh_energy_consultation/analysis/produce_plots.py
+"""
+Script to produce plots.
+"""
+
 import altair as alt
 
 from asf_welsh_energy_consultation.getters.get_data import get_electric_tenure
@@ -10,6 +15,9 @@ setup_theme()
 
 
 output_folder = "outputs/figures/"
+
+if not os.path.isdir(output_folder):
+    os.makedirs(output_folder)
 
 
 def time_series_comparison(
