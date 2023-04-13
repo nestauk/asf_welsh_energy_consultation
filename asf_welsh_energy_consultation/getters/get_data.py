@@ -1,19 +1,24 @@
 from asf_welsh_energy_consultation import PROJECT_DIR
 
+from asf_core_data import load_preprocessed_epc_data
 import pandas as pd
 import numpy as np
 import os
 
 postcode_path = "inputs/data/postcodes"
 regions_path = "inputs/data/regions.csv"
+local_mcs_path = "inputs/data/mcs_installations_230315.csv"
+off_gas_path = "inputs/data/off-gas-live-postcodes-2022.xlsx"
+oa_path = "inputs/data/postcode_to_output_area.csv"
+rurality_path = "inputs/data/rurality.ods"
+local_mcs_epc_path = "inputs/data/mcs_installations_epc_full_230315.csv"
+tenure_path = "inputs/data/tenure.csv"
 
 LOCAL_DATA_DIR = "/Users/chris.williamson/Documents/ASF_data"
 
 
-def get_regions():
-    """Get dataset of all UK postcodes with easting/northing coordinates,
-    top-level region, and country columns. Save postcode and region columns
-    as csv to enable lookup.
+def get_countries():
+    """Get lookup table of postcodes to countries.
 
     Returns:
         Dataframe: Postcode geographic data.
@@ -22,23 +27,13 @@ def get_regions():
     postcode_folder = PROJECT_DIR / postcode_path
     files = os.listdir(postcode_folder)
     postcode_df = pd.concat(
-        # Only need postcode, coordinates and LA code cols
-        (
-            pd.read_csv(postcode_folder / file, header=None)[[0, 2, 3, 8]]
-            for file in files
-        ),
+        # Only need postcode and LA code cols
+        (pd.read_csv(postcode_folder / file, header=None)[[0, 8]] for file in files),
         ignore_index=True,
     )
-    postcode_df.columns = ["postcode", "easting", "northing", "la_code"]
+    postcode_df.columns = ["postcode", "la_code"]
 
     postcode_df["postcode"] = postcode_df["postcode"].str.replace(" ", "")
-
-    # Read English regions data so that LA codes can be associated with region names
-    regions = pd.read_csv(PROJECT_DIR / regions_path)
-    regions = regions[["LAD21CD", "RGN21NM"]]
-    regions.columns = ["la_code", "region_name"]
-
-    pc_regions = postcode_df.merge(regions, on="la_code", how="left")
 
     # Get country names from LA codes - country can be inferred from
     # first character of LA code
@@ -49,17 +44,15 @@ def get_regions():
         "N": "Northern Ireland",
         " ": np.nan,
     }
-    pc_regions["country"] = (
-        pc_regions["la_code"].fillna(" ").apply(lambda code: country_dict[code[0]])
+    postcode_df["country"] = (
+        postcode_df["la_code"].fillna(" ").apply(lambda code: country_dict[code[0]])
     )
-    # Outside England, region = country
-    pc_regions["region_name"] = pc_regions["region_name"].fillna(pc_regions["country"])
 
-    return pc_regions
+    return postcode_df
 
 
 def get_mcs_domestic():
-    mcs = pd.read_csv("inputs/data/mcs_installations_230315.csv")
+    mcs = pd.read_csv(PROJECT_DIR / local_mcs_path)
 
     mcs["installation_type"] = mcs["installation_type"].fillna(
         mcs["end_user_installation_type"]
@@ -71,7 +64,7 @@ def get_mcs_domestic():
 
 def get_offgas():
     og = pd.read_excel(
-        "inputs/data/off-gas-live-postcodes-2022.xlsx",
+        PROJECT_DIR / off_gas_path,
         sheet_name="Off Gas Live PostCodes 22",
     )
 
@@ -84,7 +77,7 @@ def get_offgas():
 
 def get_rurality():
     oa = pd.read_csv(
-        "inputs/data/postcode_to_output_area.csv", encoding="latin-1"
+        PROJECT_DIR / oa_path, encoding="latin-1"
     )  # latin-1 as otherwise invalid byte
 
     oa = oa[["pcd7", "oa11cd"]].rename(
@@ -93,7 +86,7 @@ def get_rurality():
     oa["postcode"] = oa["postcode"].str.replace(" ", "")
 
     rural = pd.read_excel(
-        "inputs/data/rurality.ods", engine="odf", sheet_name="OA11", skiprows=2
+        PROJECT_DIR / rurality_path, engine="odf", sheet_name="OA11", skiprows=2
     )
     rural = rural.rename(
         columns={
@@ -122,21 +115,61 @@ def get_rurality():
     return oa_rural
 
 
-from asf_core_data import load_preprocessed_epc_data
-
-
 def get_wales_epc():
     wales_epc = load_preprocessed_epc_data(
         data_path=LOCAL_DATA_DIR, usecols=None, version="preprocessed", subset="Wales"
     )
+
     return wales_epc
 
 
-def get_mcs_epc():
-    mcs_epc = pd.read_csv("inputs/data/mcs_installations_epc_full_230315.csv")
+def get_mcs_epc_domestic():
+    mcs_epc = pd.read_csv(PROJECT_DIR / local_mcs_epc_path)
     mcs_epc["commission_date"] = pd.to_datetime(mcs_epc["commission_date"])
     mcs_epc["INSPECTION_DATE"] = pd.to_datetime(mcs_epc["INSPECTION_DATE"])
 
-    mcs_epc["capacity"] = mcs_epc["capacity"].mask(mcs_epc["capacity"] > 100)
+    mcs_epc["installation_type"] = mcs_epc["installation_type"].fillna(
+        mcs_epc["end_user_installation_type"]
+    )
+    mcs_epc_domestic = mcs_epc.loc[mcs_epc.installation_type == "Domestic"].reset_index(
+        drop=True
+    )
 
-    return mcs_epc
+    return mcs_epc_domestic
+
+
+def get_electric_tenure():
+    data = pd.read_csv(PROJECT_DIR / tenure_path)
+
+    data = data[
+        [
+            "Countries",
+            "Type of central heating in household (13 categories)",
+            "Observation",
+            "Tenure of household (5 categories)",
+        ]
+    ].rename(
+        columns={
+            "Countries": "country",
+            "Type of central heating in household (13 categories)": "heating_type",
+            "Observation": "n",
+            "Tenure of household (5 categories)": "tenure",
+        }
+    )
+
+    data = data.loc[
+        (data["country"] == "Wales")
+        & (data["heating_type"] == "Electric only")
+        & (data["tenure"] != "Does not apply")
+    ].reset_index(drop=True)
+
+    data["tenure"] = data["tenure"].replace(
+        {
+            "Owned: Owns outright": "Owned outright",
+            "Owned: Owns with a mortgage or loan or shared ownership": "Owned with\nmortgage/loan or\nshared ownership",
+            "Private rented or lives rent free": "Private rented or\nrent free",
+            "Rented: Social rented": "Social rented",
+        }
+    )
+
+    return data
