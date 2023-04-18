@@ -81,13 +81,13 @@ if __name__ == "__main__":
     installations_by_gas_status_chart = time_series_comparison(
         data=installations_by_gas_status,
         title=[
-            "Fig. 4: Cumulative number of MCS certified heat pump installations",
-            "in Welsh homes located in off- and on-gas postcodes",
+            "Fig. 4: Cumulative number of MCS certified heat pump installations in Welsh homes",
+            "located in off- and on-gas postcodes",
         ],
         y_var="Number of heat pumps:Q",
         y_title="Number of heat pump installations",
         color_var="Gas status:N",
-    )
+    ).configure_title(fontSize=20)
 
     installations_by_gas_status_chart.save(
         output_folder + "installations_by_gas_status.png"
@@ -210,6 +210,6 @@ if __name__ == "__main__":
         )
         .configure(lineBreak="\n")
         .properties(width=600, height=300)
-    )
+    ).configure_title(fontSize=20)
 
     electric_tenure_chart.save(output_folder + "electric_tenure.png")
