@@ -36,7 +36,7 @@ def get_countries():
         (pd.read_csv(postcode_folder / file, header=None)[[0, 8]] for file in files),
         ignore_index=True,
     )
-    postcode_df.columns = ["postcode", "la_code"]
+    postcode_df = postcode_df.rename(columns={0: "postcode", 8: "la_code"})
 
     postcode_df["postcode"] = postcode_df["postcode"].str.replace(" ", "")
 
@@ -67,6 +67,8 @@ def get_mcs_domestic():
     mcs["installation_type"] = mcs["installation_type"].fillna(
         mcs["end_user_installation_type"]
     )
+    mcs = mcs.drop(columns=["end_user_installation_type"])
+
     mcs_domestic = mcs.loc[mcs.installation_type == "Domestic"].reset_index(drop=True)
 
     return mcs_domestic
