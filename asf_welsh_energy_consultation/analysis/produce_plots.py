@@ -7,6 +7,7 @@ import altair as alt
 
 from asf_welsh_energy_consultation.getters.get_data import get_electric_tenure
 from asf_welsh_energy_consultation.pipeline.process_data import *
+from asf_welsh_energy_consultation.utils.formatting import format_number
 
 from nesta_ds_utils.viz.altair.formatting import setup_theme
 
@@ -80,8 +81,8 @@ if __name__ == "__main__":
     installations_by_gas_status_chart = time_series_comparison(
         data=installations_by_gas_status,
         title=[
-            "Cumulative number of MCS certified heat pump installations in",
-            "Welsh homes located in off- and on-gas postcodes",
+            "Fig. 4: Cumulative number of MCS certified heat pump installations",
+            "in Welsh homes located in off- and on-gas postcodes",
         ],
         y_var="Number of heat pumps:Q",
         y_title="Number of heat pump installations",
@@ -193,11 +194,14 @@ if __name__ == "__main__":
     # Split of properties on electric heating by tenure
 
     electric_tenure = get_electric_tenure()
+    N = electric_tenure["n"].sum()
 
     electric_tenure_chart = (
         alt.Chart(
             electric_tenure,
-            title="Properties in Wales with only electric heating, split by tenure",
+            title="Fig. 2: Properties in Wales with only electric heating, split by tenure (N = "
+            + format_number(N)
+            + ")",
         )
         .mark_bar()
         .encode(
