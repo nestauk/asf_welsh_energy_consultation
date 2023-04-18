@@ -115,7 +115,7 @@ if __name__ == "__main__":
     # ======================================================
     # Proportions of new builds that have heat pumps
 
-    new_build_hp_proportion = new_hp_counts()
+    new_build_hp_proportion = get_new_hp_counts()
 
     new_build_hp_proportion_chart = (
         alt.Chart(

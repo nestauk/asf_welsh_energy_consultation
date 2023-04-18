@@ -38,7 +38,7 @@ def get_enhanced_mcs():
     mcs = mcs.merge(rural, on="postcode", how="left")
     # only 13 postcodes lost in this merge
 
-    # add custom rurality column
+    # add custom rurality column (rurality "type 7": all different types of urban mapped to Urban)
     mcs["rurality_7"] = mcs["rurality_10_label"].replace(
         {
             "Urban city and town": "Urban",
@@ -52,17 +52,17 @@ def get_enhanced_mcs():
 
 
 # load enhanced MCS as part of this script, so only needs to be done once
-mcs = get_enhanced_mcs()
+enhanced_mcs = get_enhanced_mcs()
 
 
-def cumsums_by_variable(variable, new_var_name, data=mcs):
+def cumsums_by_variable(variable, new_var_name, data=enhanced_mcs):
     """Process data into a form giving the cumulative total of
     installations on each date for each category of a variable.
 
     Args:
         variable (str): Variable to split by.
         new_var_name (str): Name of variable in processed dataset.
-        data (pd.DataFrame, optional): Base data. Defaults to mcs.
+        data (pd.DataFrame, optional): Base data. Defaults to enhanced_mcs.
 
     Returns:
         pd.DataFrame: Cumulative totals dataset.
@@ -127,7 +127,7 @@ def get_wales_epc_new():
     return wales_epc_new
 
 
-def new_hp_counts():
+def get_new_hp_counts():
     """Get counts of new builds with HPs for each year.
 
     Returns:
@@ -151,14 +151,16 @@ def new_hp_counts():
     new_hp_counts["n"] = new_hp_counts.sum(axis=1)
     new_hp_counts["prop_hp"] = new_hp_counts["Heat pump"] / new_hp_counts["n"]
 
-    new_builds = new_hp_counts.reset_index()
+    new_hp_counts = new_hp_counts.reset_index()
 
-    new_builds = pd.melt(new_builds, id_vars="year", value_vars=["Other", "Heat pump"])
-    new_builds["year"] = pd.to_datetime(new_builds["year"], format="%Y")
+    new_hp_counts = pd.melt(
+        new_hp_counts, id_vars="year", value_vars=["Other", "Heat pump"]
+    )
+    new_hp_counts["year"] = pd.to_datetime(new_hp_counts["year"], format="%Y")
 
-    new_builds = new_builds.rename(columns={"variable": "Heating system"})
+    new_hp_counts = new_hp_counts.rename(columns={"variable": "Heating system"})
 
-    return new_builds
+    return new_hp_counts
 
 
 def get_new_hp_cumsums():
@@ -250,7 +252,7 @@ def get_mcs_retrofits():
     # this makes sense because if they had been built with a HP we would expect them to appear in EPC
     # due to new build EPC requirements
 
-    mcs = get_enhanced_mcs()
-    mcs_retrofits = mcs.loc[~mcs.index.isin(hp_when_built_indices)]
+    enhanced_mcs = get_enhanced_mcs()
+    mcs_retrofits = enhanced_mcs.loc[~enhanced_mcs.index.isin(hp_when_built_indices)]
 
     return mcs_retrofits
