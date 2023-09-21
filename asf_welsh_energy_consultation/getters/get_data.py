@@ -4,6 +4,7 @@ Data getters.
 """
 
 from asf_welsh_energy_consultation import PROJECT_DIR
+from asf_welsh_energy_consultation import config
 
 from asf_core_data import load_preprocessed_epc_data
 import pandas as pd
@@ -19,7 +20,7 @@ rurality_path = "inputs/data/rurality.ods"
 local_mcs_epc_path = "inputs/data/mcs_installations_epc_full_230315.csv"
 tenure_path = "inputs/data/tenure.csv"
 
-LOCAL_DATA_DIR = "/Users/chris.williamson/Documents/ASF_data"
+LOCAL_DATA_DIR = os.path.expanduser(config["directories"]["data_directory"])
 
 
 def get_countries():
