@@ -6,21 +6,109 @@ Data getters.
 from asf_welsh_energy_consultation import PROJECT_DIR
 from asf_welsh_energy_consultation import config
 
-from asf_core_data import load_preprocessed_epc_data
+from asf_core_data import load_preprocessed_epc_data, get_mcs_installations
+from asf_core_data.getters.mcs_getters.get_mcs_installations import (
+    get_processed_installations_data_by_batch,
+)
+from asf_core_data.config import base_config
+from asf_core_data.getters.data_getters import download_core_data
+
 import pandas as pd
 import numpy as np
 import os
 
+from argparse import ArgumentParser
+
+epc_processing_version = config["epc_data_config"]["epc_processing_version"]
+download_core_data_epc_version = config["epc_data_config"][
+    "download_core_data_epc_version"
+]
+
 postcode_path = "inputs/data/postcodes"
 regions_path = "inputs/data/regions.csv"
-local_mcs_path = "inputs/data/mcs_installations_230315.csv"
 off_gas_path = "inputs/data/off-gas-live-postcodes-2022.xlsx"
 oa_path = "inputs/data/postcode_to_output_area.csv"
 rurality_path = "inputs/data/rurality.ods"
-local_mcs_epc_path = "inputs/data/mcs_installations_epc_full_230315.csv"
 tenure_path = "inputs/data/tenure.csv"
 
-LOCAL_DATA_DIR = os.path.expanduser(config["directories"]["data_directory"])
+
+def create_argparser():
+    """
+    Creates an Argument Parser that can receive the following arguments:
+    - local_data_dir
+    - epc_batch
+    - mcs_batch
+
+    Returns:
+        Argument Parser
+    """
+    parser = ArgumentParser()
+
+    parser.add_argument(
+        "--local_data_dir",
+        help="Local directory where EPC data is/will be stored",
+        type=str,
+    )
+
+    parser.add_argument(
+        "--epc_batch",
+        help='Specifies which EPC data batch to use in the form `YYYY_[Quarter]_complete`. Defaults to "newest"',
+        default="newest",
+        type=str,
+    )
+
+    parser.add_argument(
+        "--mcs_batch",
+        help="Specifies which MCS installations data batch to use. Only date required in YYMMDD format. "
+        'Defaults to "newest"',
+        default="newest",
+        type=str,
+    )
+
+    return parser
+
+
+def get_args():
+    """
+    Get arguments from Argument Parser.
+
+    Returns:
+        List of arguments.
+    """
+    parser = create_argparser()
+
+    return parser.parse_args()
+
+
+arguments = get_args()
+LOCAL_DATA_DIR = arguments.local_data_dir
+
+
+def get_mcs_and_joined_data():
+    """
+    Get cleaned MCS data, and cleaned MCS data fully joined with EPC dataset up to date specified in args.
+
+    Returns:
+        MCS dataset and MCS dataset fully joined with EPC dataset
+    """
+    mcs_date = arguments.mcs_batch
+
+    # Get latest MCS data or batch specified in args
+    if mcs_date == "newest":
+        mcs_data = get_mcs_installations(epc_version="none")
+        mcs_epc_full_data = get_mcs_installations(epc_version="full")
+    else:
+        mcs_data = get_processed_installations_data_by_batch(
+            batch_date=mcs_date, epc_version="none"
+        )
+        mcs_epc_full_data = get_processed_installations_data_by_batch(
+            batch_date=mcs_date, epc_version="full"
+        )
+    return mcs_data, mcs_epc_full_data
+
+
+# Get MCS data from S3
+mcs_installations_data, mcs_installations_epc_full_data = get_mcs_and_joined_data()
 
 
 def get_countries():
@@ -63,12 +151,13 @@ def get_mcs_domestic():
     Returns:
         pd.DataFrame: Domestic MCS installation records.
     """
-    mcs = pd.read_csv(PROJECT_DIR / local_mcs_path)
+    mcs = mcs_installations_data
 
-    mcs["installation_type"] = mcs["installation_type"].fillna(
-        mcs["end_user_installation_type"]
-    )
-    mcs = mcs.drop(columns=["end_user_installation_type"])
+    if "end_user_installation_type" in mcs.columns:
+        mcs["installation_type"] = mcs["installation_type"].fillna(
+            mcs["end_user_installation_type"]
+        )
+        mcs = mcs.drop(columns=["end_user_installation_type"])
 
     mcs_domestic = mcs.loc[mcs.installation_type == "Domestic"].reset_index(drop=True)
 
@@ -140,14 +229,55 @@ def get_rurality():
     return oa_rural
 
 
+def check_local_epc():
+    """
+    Checks local directory for relevant EPC batch and downloads relevant EPC batch to local directory if not found.
+
+    """
+    epc_batch = arguments.epc_batch
+
+    local_epc_batch_path = os.path.join(
+        LOCAL_DATA_DIR,
+        base_config.OUTPUT_DATA_PATH,
+        epc_batch.upper().replace("COMPLETE", "complete"),
+    )
+
+    local_epc_path = os.path.join(
+        local_epc_batch_path, f"EPC_GB_{epc_processing_version}.csv"
+    )
+
+    if not os.path.exists(local_epc_path) and not os.path.exists(
+        os.path.join(local_epc_path, ".zip")
+    ):
+        epc_file = f"EPC_GB_{epc_processing_version}.csv.zip"
+        print(
+            f"File not found: EPC data; batch: `{epc_batch}`; version: `{epc_processing_version}` not found in "
+            f"local directory: {LOCAL_DATA_DIR}.\n"
+            f"Now downloading the following file to {LOCAL_DATA_DIR}: {epc_file}"
+        )
+        download_core_data(
+            dataset=download_core_data_epc_version,
+            local_dir=LOCAL_DATA_DIR,
+            batch=epc_batch,
+        )
+
+
 def get_wales_epc():
     """Get Welsh EPC data (processed but not deduplicated).
 
     Returns:
         pd.DataFrame: Welsh preprocessed EPC data.
     """
+    check_local_epc()
+
+    epc_batch = arguments.epc_batch
+
     wales_epc = load_preprocessed_epc_data(
-        data_path=LOCAL_DATA_DIR, usecols=None, version="preprocessed", subset="Wales"
+        data_path=LOCAL_DATA_DIR,
+        usecols=None,
+        version=epc_processing_version,
+        subset="Wales",
+        batch=epc_batch,
     )
 
     return wales_epc
@@ -159,13 +289,14 @@ def get_mcs_epc_domestic():
     Returns:
         pd.DataFrame: Domestic MCS-EPC data.
     """
-    mcs_epc = pd.read_csv(PROJECT_DIR / local_mcs_epc_path)
+    mcs_epc = mcs_installations_epc_full_data
     mcs_epc["commission_date"] = pd.to_datetime(mcs_epc["commission_date"])
     mcs_epc["INSPECTION_DATE"] = pd.to_datetime(mcs_epc["INSPECTION_DATE"])
 
-    mcs_epc["installation_type"] = mcs_epc["installation_type"].fillna(
-        mcs_epc["end_user_installation_type"]
-    )
+    if "end_user_installation_type" in mcs_epc.columns:
+        mcs_epc["installation_type"] = mcs_epc["installation_type"].fillna(
+            mcs_epc["end_user_installation_type"]
+        )
     mcs_epc_domestic = mcs_epc.loc[mcs_epc.installation_type == "Domestic"].reset_index(
         drop=True
     )
