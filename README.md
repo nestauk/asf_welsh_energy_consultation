@@ -18,8 +18,6 @@ The remainder of the charts in the response can be produced from code in the rep
   - Install packages listed in `requirements.txt`
 - Activate conda environment: `conda activate asf_welsh_energy_consultation`
 - Run `make inputs-pull` to pull the zipped static data from S3 and put it in `/inputs`
-- Follow the instructions (here)[https://github.com/altair-viz/altair_saver/#additional-requirements] to install
-  ChromeDriver, node, and the required packages into your conda environment.
 
 - Run `python asf_welsh_energy_consultation/analysis/produce_plots.py --local_data_dir <YOUR_LOCAL_DIR>`. You need to specify the path to the local
   directory where your local copy of the EPC data is/will be saved by replacing `<YOUR_LOCAL_DIR>` with the path to your "ASF_data" directory or equivalent.
