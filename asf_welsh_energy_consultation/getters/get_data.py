@@ -23,7 +23,9 @@ epc_processing_version = config["epc_data_config"]["epc_processing_version"]
 download_core_data_epc_version = config["epc_data_config"][
     "download_core_data_epc_version"
 ]
+input_data_path = "inputs/data/"
 
+wales_epc_path = "wales_epc.csv"
 postcode_path = "inputs/data/postcodes"
 regions_path = "inputs/data/regions.csv"
 off_gas_path = "inputs/data/off-gas-live-postcodes-2022.xlsx"
@@ -262,7 +264,7 @@ def check_local_epc():
         )
 
 
-def get_wales_epc():
+def get_wales_processed_epc():
     """Get Welsh EPC data (processed but not deduplicated).
 
     Returns:
@@ -275,7 +277,7 @@ def get_wales_epc():
     wales_epc = load_preprocessed_epc_data(
         data_path=LOCAL_DATA_DIR,
         usecols=None,
-        version=epc_processing_version,
+        version="preprocessed",
         subset="Wales",
         batch=epc_batch,
     )
@@ -344,3 +346,77 @@ def get_electric_tenure():
     )
 
     return data
+
+
+def load_wales_df(from_csv=True):
+    """Load preprocessed and deduplicated EPC dataset for Wales.
+    If data is loaded from all-GB file, the filtered version is saved to csv
+    for easier future loading.
+
+    Args:
+        from_csv (bool, optional): Whether to load from saved CSV. Defaults to True.
+
+    Returns:
+        pd.DataFrame: EPC data.
+    """
+    if from_csv:
+        wales_epc = pd.read_csv(wales_epc_path)
+    else:
+        batch = arguments.epc_batch
+        wales_epc = load_preprocessed_epc_data(
+            data_path=LOCAL_DATA_DIR,
+            subset="Wales",
+            batch=batch,
+            version="preprocessed_dedupl",
+            usecols=[
+                "LMK_KEY",
+                "INSPECTION_DATE",
+                "UPRN",
+                "POSTCODE",
+                "CURRENT_ENERGY_EFFICIENCY",
+                "CURRENT_ENERGY_RATING",
+                "WALLS_ENERGY_EFF",
+                "FLOOR_ENERGY_EFF",
+                "ROOF_ENERGY_EFF",
+                "CONSTRUCTION_AGE_BAND",
+                "TENURE",
+                "TRANSACTION_TYPE",
+                "HP_INSTALLED",
+            ],
+        )
+
+        wales_epc.TENURE = wales_epc.TENURE.replace(
+            {
+                "owner-occupied": "Owner-occupied",
+                "rental (social)": "Socially rented",
+                "rental (private)": "Privately rented",
+                "unknown": "Unknown",
+            }
+        )
+        # if CONSTRUCTION_AGE_BAND is unknown and TRANSACTION_TYPE is new dwelling,
+        # assume construction age is >2007 because EPCs started in 2008
+        wales_epc["CONSTRUCTION_AGE_BAND"].loc[
+            (wales_epc.CONSTRUCTION_AGE_BAND == "unknown")
+            & (wales_epc.TRANSACTION_TYPE == "new dwelling")
+        ] = "2007 onwards"
+
+        if not os.path.isdir(input_data_path):
+            os.makedirs(input_data_path)
+
+        wales_epc.to_csv(input_data_path + wales_epc_path)
+
+    return wales_epc
+
+
+def load_wales_hp(wales_epc):
+    """Load Welsh EPC data filtered to properties with heat pumps.
+
+    Args:
+        wales_epc (pd.DataFrame): Wales EPC data.
+
+    Returns:
+        pd.DataFrame: EPC data filtered to properties with heat pumps.
+    """
+    wales_hp = wales_epc.loc[wales_epc.HP_INSTALLED].reset_index(drop=True)
+
+    return wales_hp
