@@ -102,7 +102,7 @@ def cumsums_by_variable(variable, new_var_name, data=enhanced_mcs):
 
 # PROCESSING EPC
 
-wales_epc = get_wales_epc()
+wales_epc = get_wales_processed_epc()
 
 
 def get_wales_epc_new():
