@@ -22,11 +22,12 @@ The remainder of the charts in the response can be produced from code in the rep
   ChromeDriver, node, and the required packages into your conda environment.
 
 - Run `python asf_welsh_energy_consultation/analysis/produce_plots.py --local_data_dir <YOUR_LOCAL_DIR>`. You need to specify the path to the local
-  directory where your local copy of the EPC data is/will be saved by replacing `<YOUR_LOCAL_DIR>` with the path. You can specify which
+  directory where your local copy of the EPC data is/will be saved by replacing `<YOUR_LOCAL_DIR>` with the path to your "ASF_data" directory or equivalent.
+  If you don't have a local directory for ASF core data, you can create a folder called "ASF_data" in your home directory. You can specify which
   batch of EPC data to download and MCS data to load from S3 by passing the `--epc_batch` and `--mcs_batch` arguments, both
   default to downloading/loading the newest data from S3, respectively. Run `python asf_welsh_energy_consultation/analysis/produce_plots.py -h` for more info.
 
-The script should generate the following six plots:
+The script should generate the following six plots which will be saved in your local repo in `outputs/figures`:
 
 - `cumulative_retrofits.html`
 - `electric_tenure.html`
