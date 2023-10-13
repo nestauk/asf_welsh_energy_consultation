@@ -5,7 +5,7 @@ Script to produce plots.
 
 import altair as alt
 
-# from asf_welsh_energy_consultation.getters.get_data import get_electric_tenure
+from asf_welsh_energy_consultation.getters.get_data import get_electric_tenure
 from asf_welsh_energy_consultation.pipeline.process_data import *
 from asf_welsh_energy_consultation.utils.formatting import format_number
 from asf_welsh_energy_consultation.getters.get_data import load_wales_df, load_wales_hp
@@ -20,7 +20,6 @@ from nesta_ds_utils.viz.altair.formatting import setup_theme
 
 alt.data_transformers.disable_max_rows()
 setup_theme()
-
 
 output_folder = "outputs/figures/"
 
@@ -63,6 +62,7 @@ if __name__ == "__main__":
         y_var="Number of heat pumps:Q",
         y_title="Number of heat pump installations",
         color_var="Rurality:N",
+        domain_max="2023-01-01",
     )
 
     installations_by_rurality_chart.save(
