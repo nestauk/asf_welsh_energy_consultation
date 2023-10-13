@@ -10,8 +10,10 @@ from asf_core_data import load_preprocessed_epc_data, get_mcs_installations
 from asf_core_data.getters.mcs_getters.get_mcs_installations import (
     get_processed_installations_data_by_batch,
 )
+
+from asf_core_data.getters.epc.data_batches import get_batch_path
 from asf_core_data.config import base_config
-from asf_core_data.getters.data_getters import download_core_data
+from asf_core_data.getters.data_getters import download_core_data, logger
 
 import pandas as pd
 import numpy as np
@@ -23,9 +25,11 @@ epc_processing_version = config["epc_data_config"]["epc_processing_version"]
 download_core_data_epc_version = config["epc_data_config"][
     "download_core_data_epc_version"
 ]
+
 input_data_path = "inputs/data/"
 
 wales_epc_path = "wales_epc.csv"
+
 postcode_path = "inputs/data/postcodes"
 regions_path = "inputs/data/regions.csv"
 off_gas_path = "inputs/data/off-gas-live-postcodes-2022.xlsx"
@@ -155,6 +159,8 @@ def get_mcs_domestic():
     """
     mcs = mcs_installations_data
 
+    # Older MCS data batches will need this processing step
+    # Newer batches have been through this processing step already in the pipeline
     if "end_user_installation_type" in mcs.columns:
         mcs["installation_type"] = mcs["installation_type"].fillna(
             mcs["end_user_installation_type"]
@@ -233,29 +239,32 @@ def get_rurality():
 
 def check_local_epc():
     """
-    Checks local directory for relevant EPC batch and downloads relevant EPC batch to local directory if not found.
-
+    Checks local directory for relevant EPC batch and downloads relevant EPC batch from S3 to local directory if not found.
     """
     epc_batch = arguments.epc_batch
 
-    local_epc_batch_path = os.path.join(
-        LOCAL_DATA_DIR,
-        base_config.OUTPUT_DATA_PATH,
-        epc_batch.upper().replace("COMPLETE", "complete"),
+    local_epc_output_dir = os.path.join(
+        LOCAL_DATA_DIR, base_config.OUTPUT_DATA_PATH, "{}"
     )
 
-    local_epc_path = os.path.join(
-        local_epc_batch_path, f"EPC_GB_{epc_processing_version}.csv"
+    local_epc_file_path = os.path.join(
+        local_epc_output_dir, f"EPC_GB_{epc_processing_version}.csv"
     )
 
-    if not os.path.exists(local_epc_path) and not os.path.exists(
-        os.path.join(local_epc_path, ".zip")
+    local_epc_batch_path = get_batch_path(
+        rel_path=local_epc_file_path,
+        data_path="S3",
+        batch=epc_batch,
+        check_folder="outputs",
+    )
+
+    if not os.path.exists(local_epc_batch_path) and not os.path.exists(
+        os.path.join(local_epc_batch_path, ".zip")
     ):
-        epc_file = f"EPC_GB_{epc_processing_version}.csv.zip"
-        print(
-            f"File not found: EPC data; batch: `{epc_batch}`; version: `{epc_processing_version}` not found in "
+        logger.info(
+            f"EPC data; batch: `{local_epc_batch_path.parts[-2]}`; version: `{epc_processing_version}` not found in "
             f"local directory: {LOCAL_DATA_DIR}.\n"
-            f"Now downloading the following file to {LOCAL_DATA_DIR}: {epc_file}"
+            f"Now downloading from S3 to {LOCAL_DATA_DIR}."
         )
         download_core_data(
             dataset=download_core_data_epc_version,
@@ -277,7 +286,7 @@ def get_wales_processed_epc():
     wales_epc = load_preprocessed_epc_data(
         data_path=LOCAL_DATA_DIR,
         usecols=None,
-        version="preprocessed",
+        version=epc_processing_version,
         subset="Wales",
         batch=epc_batch,
     )
@@ -310,7 +319,7 @@ def get_electric_tenure():
     """Get census 2021 data on electric heating vs tenure.
 
     Returns:
-        pd.DataFrame: Dataset of tenure counts for properties on electric heating.
+        pd.DataFrame: Dataset of tenure counts for properties on electric heating in Wales.
     """
     data = pd.read_csv(PROJECT_DIR / tenure_path)
 

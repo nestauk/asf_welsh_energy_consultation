@@ -7,5 +7,6 @@ matplotlib
 odfpy
 selenium==4.2.0
 argparse==1.4.0
+s3fs>=2023.3.0
 asf_core_data@ git+ssh://git@github.com/nestauk/asf_core_data.git
 nesta_ds_utils@ git+ssh://git@github.com/nestauk/nesta_ds_utils.git
