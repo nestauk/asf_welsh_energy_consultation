@@ -12,7 +12,7 @@ from asf_core_data.getters.mcs_getters.get_mcs_installations import (
 )
 from asf_core_data.getters.epc.data_batches import get_batch_path
 from asf_core_data.config import base_config
-from asf_core_data.getters.data_getters import download_core_data
+from asf_core_data.getters.data_getters import download_core_data, logger
 
 import pandas as pd
 import numpy as np
@@ -257,7 +257,7 @@ def check_local_epc():
     if not os.path.exists(local_epc_batch_path) and not os.path.exists(
         os.path.join(local_epc_batch_path, ".zip")
     ):
-        print(
+        logger.info(
             f"EPC data; batch: `{local_epc_batch_path.parts[-2]}`; version: `{epc_processing_version}` not found in "
             f"local directory: {LOCAL_DATA_DIR}.\n"
             f"Now downloading from S3 to {LOCAL_DATA_DIR}."
