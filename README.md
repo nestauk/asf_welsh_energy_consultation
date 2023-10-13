@@ -9,30 +9,30 @@ The remainder of the charts in the response can be produced from code in the rep
 - Meet the data science cookiecutter [requirements](http://nestauk.github.io/ds-cookiecutter/quickstart), in brief:
   - Install: `direnv` and `conda`
 - Clone the repo: `git clone git@github.com:nestauk/asf_welsh_energy_consultation.git`
-- Navigate to the repo folder
+- Navigate to your local repo folder
 - Checkout the correct branch if not working on dev
-- Run `make install` to configure the development environment:
+- Run `direnv allow`
+- Run `make install` to configure the development environment. This will:
   - Setup the conda environment
   - Configure `pre-commit`
-- Run `direnv allow`
+  - Install packages listed in `requirements.txt`
 - Activate conda environment: `conda activate asf_welsh_energy_consultation`
-- Install requirements: `pip install -r requirements.txt`
-- Download the data:
+- Run `make inputs-pull` to pull the zipped static data from S3 and put it in `/inputs`
 
-  - `make inputs-pull` will pull the zipped data from S3 and put it in `/inputs`
-  - Download `mcs_installations_230315.csv` and `mcs_installations_epc_full_230315.csv` from `asf-core-data` S3 bucket (they can be found under `outputs/MCS/`) and add them to `inputs/data/`- Perform additional setup in order to save plots:
+- Run `python asf_welsh_energy_consultation/analysis/produce_plots.py --local_data_dir <YOUR_LOCAL_DIR>`. You need to specify the path to the local
+  directory where your local copy of the EPC data is/will be saved by replacing `<YOUR_LOCAL_DIR>` with the path to your "ASF_data" directory or equivalent.
+  If you don't have a local directory for ASF core data, you can create a folder called "ASF_data" in your home directory. You can specify which
+  batch of EPC data to download and MCS data to load from S3 by passing the `--epc_batch` and `--mcs_batch` arguments, both
+  default to downloading/loading the newest data from S3, respectively. Run `python asf_welsh_energy_consultation/analysis/produce_plots.py -h` for more info.
 
-  - Follow the instructions (here)[https://github.com/altair-viz/altair_saver/#nodejs] - you may just need to run `conda install -c conda-forge vega-cli vega-lite-cli`
+The script should generate the following six plots which will be saved in your local repo in `outputs/figures`:
 
-- Change `LOCAL_DATA_DIR` in `getters/get_data.py` to your local EPC data folder. The April 2023 analysis uses the "2022_Q4_complete" version of the EPC data.
-
-- Run `python asf_welsh_energy_consultation/analysis/produce_plots.py`. This should generate six plots:
-  - `cumulative_retrofits.png`
-  - `electric_tenure.png`
-  - `installations_by_gas_status.png`
-  - `installations_by_rurality.png`
-  - `new_build_hp_cumulative.png`
-  - `new_build_hp_proportion.png`
+- `cumulative_retrofits.html`
+- `electric_tenure.html`
+- `installations_by_gas_status.html`
+- `installations_by_rurality.html`
+- `new_build_hp_cumulative.html`
+- `new_build_hp_proportion.html`
 
 ## Skeleton folder structure
 
@@ -52,6 +52,18 @@ inputs/
 outputs/
 ├─ figures/ - where charts are saved
 ```
+
+## Historical analysis
+
+Versions/batches of data used for previous analysis are listed below.
+
+April 2023 analysis:
+
+- EPC: 2022_Q4_complete (preprocessed)
+- mcs_installations_230315.csv
+- mcs_installations_epc_full_230315.csv
+- off-gas-live-postcodes-2022.xlsx - check [here](https://www.xoserve.com/a-to-z/) for updates
+- rurality.ods - 2011 Rural Urban Classification for small area geographies, see [here](https://www.ons.gov.uk/methodology/geography/geographicalproducts/ruralurbanclassifications)
 
 ## Contributor guidelines
 

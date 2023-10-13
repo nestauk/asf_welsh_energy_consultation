@@ -90,7 +90,7 @@ if __name__ == "__main__":
     ).configure_title(fontSize=20)
 
     installations_by_gas_status_chart.save(
-        output_folder + "installations_by_gas_status.png"
+        output_folder + "installations_by_gas_status.html"
     )
 
     # ======================================================
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     )
 
     installations_by_rurality_chart.save(
-        output_folder + "installations_by_rurality.png"
+        output_folder + "installations_by_rurality.html"
     )
 
     # ======================================================
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         .properties(width=600, height=300)
     )
 
-    new_build_hp_proportion_chart.save(output_folder + "new_build_hp_proportion.png")
+    new_build_hp_proportion_chart.save(output_folder + "new_build_hp_proportion.html")
 
     # ======================================================
     # Cumulative number of new builds with heat pumps
@@ -162,7 +162,7 @@ if __name__ == "__main__":
         .properties(width=600, height=300)
     )
 
-    new_build_hp_cumulative_chart.save(output_folder + "new_build_hp_cumulative.png")
+    new_build_hp_cumulative_chart.save(output_folder + "new_build_hp_cumulative.html")
 
     # ======================================================
     # Cumulative MCS retrofits
@@ -188,7 +188,7 @@ if __name__ == "__main__":
         .properties(width=600, height=300)
     )
 
-    cumulative_retrofits_chart.save(output_folder + "cumulative_retrofits.png")
+    cumulative_retrofits_chart.save(output_folder + "cumulative_retrofits.html")
 
     # ======================================================
     # Split of properties on electric heating by tenure
@@ -212,4 +212,4 @@ if __name__ == "__main__":
         .properties(width=600, height=300)
     ).configure_title(fontSize=20)
 
-    electric_tenure_chart.save(output_folder + "electric_tenure.png")
+    electric_tenure_chart.save(output_folder + "electric_tenure.html")

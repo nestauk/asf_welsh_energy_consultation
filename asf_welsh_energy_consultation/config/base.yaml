@@ -1,0 +1,3 @@
+epc_data_config:
+  epc_processing_version: "preprocessed"
+  download_core_data_epc_version: "epc_preprocessed"
