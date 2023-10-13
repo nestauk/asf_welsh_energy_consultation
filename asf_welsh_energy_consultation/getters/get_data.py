@@ -4,7 +4,7 @@ Data getters.
 """
 
 from asf_welsh_energy_consultation import PROJECT_DIR
-from asf_welsh_energy_consultation import config
+from asf_welsh_energy_consultation import config_file
 
 from asf_core_data import load_preprocessed_epc_data, get_mcs_installations
 from asf_core_data.getters.mcs_getters.get_mcs_installations import (
@@ -21,8 +21,8 @@ import os
 
 from argparse import ArgumentParser
 
-epc_processing_version = config["epc_data_config"]["epc_processing_version"]
-download_core_data_epc_version = config["epc_data_config"][
+epc_processing_version = config_file["epc_data_config"]["epc_processing_version"]
+download_core_data_epc_version = config_file["epc_data_config"][
     "download_core_data_epc_version"
 ]
 
