@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import os
 
-from asf_welsh_energy_consultation.config.translation_config import *
-from asf_welsh_energy_consultation import config
+from asf_welsh_energy_consultation.config import translation_config
+from asf_welsh_energy_consultation import config_file
+from asf_core_data.getters.data_getters import logger
 from nesta_ds_utils.viz.altair.formatting import setup_theme
 
 fig_output_path = {
@@ -24,7 +25,7 @@ for file_path in fig_output_path.values():
 
 setup_theme()
 
-time_series_min = config["plots"]["time_series_min_default"]
+# time_series_min = config["plots"]["time_series_min_default"]
 
 
 def time_series_comparison(
@@ -35,8 +36,8 @@ def time_series_comparison(
     color_var,
     x_var="date:T",
     x_title="Date",
-    domain_min=time_series_min,
-    domain_max="2023-01-01",
+    domain_min=None,
+    domain_max=None,
     width=600,
     height=300,
 ):
@@ -59,6 +60,12 @@ def time_series_comparison(
     Returns:
         alt.Chart: Base altair chart.
     """
+    if domain_min is None:
+        domain_min = config_file["plots"]["time_series_min_default"]
+        logger.info(f"Time series comparison using {domain_min} as min date")
+    if domain_max is None:
+        domain_max = data.date.max()
+        logger.info(f"Time series comparison using {domain_max} as max date")
     chart = (
         alt.Chart(
             data,
@@ -107,9 +114,9 @@ def proportions_bar_chart(
     source = pd.DataFrame({"count": base_data[field].value_counts()}).reset_index()
 
     if x_type == "good":
-        order = quality_list[language]
+        order = translation_config.quality_list[language]
     elif x_type == "tenure":
-        order = tenure_list[language]
+        order = translation_config.tenure_list[language]
     else:
         order = ["A", "B", "C", "D", "E", "F", "G"]
 
@@ -173,7 +180,7 @@ def age_prop_chart(base_data, title, filename, language="english"):
     """
 
     text_labels = [
-        energy_efficiency_text[language] + str(val)
+        translation_config.energy_efficiency_text[language] + str(val)
         for val in base_data["CURRENT_ENERGY_EFFICIENCY"]
     ]
     prop_labels = [str(round(val, 1)) + "%" for val in base_data["percentage"]]
@@ -208,7 +215,9 @@ def age_prop_chart(base_data, title, filename, language="english"):
     # format y axis
     ax.set_ylim(0, 100)
     ax.yaxis.set_major_formatter(mtick.PercentFormatter(100))
-    ax.set_ylabel(housing_stock_text[language], fontweight="bold", fontsize=12)
+    ax.set_ylabel(
+        translation_config.housing_stock_text[language], fontweight="bold", fontsize=12
+    )
     ax.set_title(title, fontweight="bold", fontsize=14, pad=20)
 
     # put legend in top right
@@ -222,7 +231,7 @@ def age_prop_chart(base_data, title, filename, language="english"):
         loc="upper right",
         bbox_to_anchor=(1.6, 1),
         fontsize=10,
-        title=age_band_text[language],
+        title=translation_config.age_band_text[language],
         title_fontproperties={"weight": "bold"},
     )
 
