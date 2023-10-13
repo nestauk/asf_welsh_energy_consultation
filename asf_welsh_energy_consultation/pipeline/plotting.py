@@ -8,11 +8,19 @@ import altair as alt
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import os
+from keplergl import KeplerGl
 
 from asf_welsh_energy_consultation.config import translation_config
 from asf_welsh_energy_consultation import config_file
 from asf_core_data.getters.data_getters import logger
 from nesta_ds_utils.viz.altair.formatting import setup_theme
+
+from asf_welsh_energy_consultation.utils.utils import arial
+
+alt.themes.register("arial", arial)
+alt.themes.enable("arial")
+
+plt.rc("font", family="Arial")
 
 fig_output_path = {
     "english": "outputs/figures/english/",
@@ -275,3 +283,15 @@ def age_prop_chart(base_data, title, filename, language="english"):
     plt.savefig(fig_output_path[language] + filename + ".png", bbox_inches="tight")
 
     print("Saved: " + filename + ".png")
+
+
+def plot_kepler_graph(base_data, filename):
+    hex_map = KeplerGl(height=500)
+    hex_map.add_data(
+        data=base_data[["perc_true", "hex_id"]], name="Heat pump proportions"
+    )
+    hex_map.save_to_html(
+        file_name=os.path.join(fig_output_path["english"], f"{filename}.html")
+    )
+
+    print("Saved: " + filename + ".html")

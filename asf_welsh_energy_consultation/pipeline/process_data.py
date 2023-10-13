@@ -6,6 +6,7 @@ Functions to process and augment data.
 import pandas as pd
 
 from asf_welsh_energy_consultation.getters.get_data import *
+from asf_core_data.utils.geospatial.data_agglomeration import add_hex_id
 
 
 # PROCESSING MCS
@@ -256,3 +257,33 @@ def get_mcs_retrofits():
     mcs_retrofits = enhanced_mcs.loc[~enhanced_mcs.index.isin(hp_when_built_indices)]
 
     return mcs_retrofits
+
+
+def generate_hex_counts(wales_df, pc_df):
+    """
+    Merges two dataframes on 'postcode' and generates pandas.DataFrame containing information on % of properties with
+    heat pumps installed in each Hex 3 partition (https://h3geo.org/docs/) in Wales
+    Args:
+        wales_df (pandas.Dataframe): df of processed EPC data for Wales
+        pc_df (pandas.Dataframe): df containing Welsh postcodes and corresponding lat/lon coordinates
+
+    Returns:
+        pandas.Dataframe: df containing information on % of properties with heat pumps installed in each Hex3 partition
+        in Wales
+
+    """
+
+    wales_df_coords = pd.merge(
+        wales_df, pc_df, on=["POSTCODE"]
+    )  # merge EPC with postcode df
+    wales_df_hex = add_hex_id(wales_df_coords, 6)  # add H3 hex id to each row
+    hp_hex_counts = (
+        wales_df_hex.groupby(["hex_id", "HP_INSTALLED"]).size().unstack(fill_value=0)
+    )  # get counts of HP installations in each hex id
+    hp_hex_counts["total"] = hp_hex_counts[True] + hp_hex_counts[False]
+    hp_hex_counts["perc_true"] = (
+        hp_hex_counts[True] / hp_hex_counts["total"] * 100
+    )  # calculate % of properties with HP in each hex
+    hp_hex_counts = hp_hex_counts.reset_index()
+
+    return hp_hex_counts
