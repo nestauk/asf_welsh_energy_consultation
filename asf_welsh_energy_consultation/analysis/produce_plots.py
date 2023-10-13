@@ -7,9 +7,7 @@ import altair as alt
 
 from asf_welsh_energy_consultation.getters.get_data import get_electric_tenure
 from asf_welsh_energy_consultation.pipeline.process_data import *
-from asf_welsh_energy_consultation.utils.formatting import format_number
 from asf_welsh_energy_consultation.getters.get_data import load_wales_df, load_wales_hp
-from asf_welsh_energy_consultation.pipeline.augmenting import generate_age_data
 from asf_welsh_energy_consultation.pipeline.plotting import (
     proportions_bar_chart,
     age_prop_chart,
@@ -156,7 +154,7 @@ if __name__ == "__main__":
         alt.Chart(
             electric_tenure,
             title="Fig. 2: Properties in Wales with only electric heating, split by tenure (N = "
-            + format_number(N)
+            + "{:,}".format(N)
             + ")",
         )
         .mark_bar()
