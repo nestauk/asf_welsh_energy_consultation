@@ -33,6 +33,14 @@ The script should generate the following six plots which will be saved in your l
 - `new_build_hp_cumulative.html`
 - `new_build_hp_proportion.html`
 
+It should generate a further 10 plots, five in English and five in Welsh, saved in `outputs/figures/english` and `outputs/figures/welsh`, respectively:
+
+- `age_prop[_welsh].png`
+- `epc_all[_welsh].html`
+- `epc_hp_private_retrofit[_welsh].html`
+- `epc_hp_private[_welsh].html`
+- `hp_tenure[_welsh].html`
+
 ## Skeleton folder structure
 
 ```
