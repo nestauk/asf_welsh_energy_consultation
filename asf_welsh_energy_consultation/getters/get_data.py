@@ -315,7 +315,7 @@ def get_electric_tenure():
     """Get census 2021 data on electric heating vs tenure.
 
     Returns:
-        pd.DataFrame: Dataset of tenure counts for properties on electric heating.
+        pd.DataFrame: Dataset of tenure counts for properties on electric heating in Wales.
     """
     data = pd.read_csv(PROJECT_DIR / tenure_path)
 
