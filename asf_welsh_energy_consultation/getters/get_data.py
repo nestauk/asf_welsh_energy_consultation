@@ -21,22 +21,6 @@ import os
 
 from argparse import ArgumentParser
 
-epc_processing_version = config_file["epc_data_config"]["epc_processing_version"]
-download_core_data_epc_version = config_file["epc_data_config"][
-    "download_core_data_epc_version"
-]
-
-input_data_path = "inputs/data/"
-
-wales_epc_path = "wales_epc.csv"
-
-postcode_path = "inputs/data/postcodes"
-regions_path = "inputs/data/regions.csv"
-off_gas_path = "inputs/data/off-gas-live-postcodes-2022.xlsx"
-oa_path = "inputs/data/postcode_to_output_area.csv"
-rurality_path = "inputs/data/rurality.ods"
-tenure_path = "inputs/data/tenure.csv"
-
 
 def create_argparser():
     """
@@ -53,6 +37,13 @@ def create_argparser():
     parser.add_argument(
         "--local_data_dir",
         help="Local directory where EPC data is/will be stored",
+        type=str,
+    )
+
+    parser.add_argument(
+        "--supp_data",
+        help="Name of directory where supplementary data is stored",
+        default="newest",
         type=str,
     )
 
@@ -83,10 +74,28 @@ def get_args():
     """
     parser = create_argparser()
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.supp_data == "newest":
+        subdirs = [subdir for subdir in os.listdir("inputs")]
+        args.supp_data = max(subdirs)
+
+    return args
 
 
 arguments = get_args()
+
+input_data_path = f"inputs/{arguments.supp_data}/"
+
+wales_epc_path = "wales_epc.csv"
+
+postcode_path = f"inputs/{arguments.supp_data}/postcodes"
+regions_path = f"inputs/{arguments.supp_data}/regions.csv"
+off_gas_path = f"inputs/{arguments.supp_data}/off-gas-live-postcodes-2022.xlsx"
+oa_path = f"inputs/{arguments.supp_data}/postcode_to_output_area.csv"
+rurality_path = f"inputs/{arguments.supp_data}/rurality.ods"
+tenure_path = f"inputs/{arguments.supp_data}/tenure.csv"
+
 LOCAL_DATA_DIR = arguments.local_data_dir
 
 
@@ -237,7 +246,7 @@ def get_rurality():
     return oa_rural
 
 
-def check_local_epc():
+def check_local_epc(epc_processing_version=None, download_core_data_epc_version=None):
     """
     Checks local directory for relevant EPC batch and downloads relevant EPC batch from S3 to local directory if not found.
     """
@@ -279,14 +288,17 @@ def get_wales_processed_epc():
     Returns:
         pd.DataFrame: Welsh preprocessed EPC data.
     """
-    check_local_epc()
+    check_local_epc(
+        epc_processing_version="preprocessed",
+        download_core_data_epc_version="epc_preprocessed",
+    )
 
     epc_batch = arguments.epc_batch
 
     wales_epc = load_preprocessed_epc_data(
         data_path=LOCAL_DATA_DIR,
         usecols=None,
-        version=epc_processing_version,
+        version="preprocessed",
         subset="Wales",
         batch=epc_batch,
     )
@@ -371,6 +383,10 @@ def load_wales_df(from_csv=True):
     if from_csv:
         wales_epc = pd.read_csv(wales_epc_path)
     else:
+        check_local_epc(
+            epc_processing_version="preprocessed_and_deduplicated",
+            download_core_data_epc_version="epc_preprocessed_dedupl",
+        )
         batch = arguments.epc_batch
         wales_epc = load_preprocessed_epc_data(
             data_path=LOCAL_DATA_DIR,
