@@ -62,7 +62,7 @@ if __name__ == "__main__":
         y_var="Number of heat pumps:Q",
         y_title="Number of heat pump installations",
         color_var="Rurality:N",
-        domain_max="2023-01-01",
+        domain_max=installations_by_rurality.date.max(),
     )
 
     installations_by_rurality_chart.save(
@@ -85,7 +85,7 @@ if __name__ == "__main__":
                 # domain ensures good margin at left/right of chart
                 "year",
                 title="Year",
-                scale=alt.Scale(domain=["2007-07-01", "2022-06-01"]),
+                scale=alt.Scale(domain=["2007-07-01", "2023-06-01"]),
             ),
             y=alt.Y("sum(value)", title="Number of EPCs"),
             # want heat pumps to be at the bottom of each bar - hacky but works
@@ -137,7 +137,7 @@ if __name__ == "__main__":
             x=alt.X(
                 "date",
                 title="Date",
-                scale=alt.Scale(domain=["2015-01-01", "2023-01-01"]),
+                scale=alt.Scale(domain=["2015-01-01", ret_cumsums.date.max()]),
             ),
             y="Number of heat pumps",
         )
