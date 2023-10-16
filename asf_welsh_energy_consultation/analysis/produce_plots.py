@@ -4,16 +4,17 @@ Script to produce plots.
 """
 
 import altair as alt
+import os
 
+from asf_welsh_energy_consultation import config_file
 from asf_welsh_energy_consultation.getters.get_data import get_electric_tenure
-from asf_welsh_energy_consultation.pipeline.process_data import *
-from asf_welsh_energy_consultation.utils.formatting import format_number
 from asf_welsh_energy_consultation.getters.get_data import (
     load_wales_df,
     load_wales_hp,
     pc_to_coords_df,
 )
-from asf_welsh_energy_consultation.pipeline.augmenting import generate_age_data
+from asf_welsh_energy_consultation.pipeline import process_data
+from asf_core_data.getters.data_getters import logger
 from asf_welsh_energy_consultation.pipeline.plotting import (
     proportions_bar_chart,
     age_prop_chart,
@@ -27,6 +28,7 @@ alt.data_transformers.disable_max_rows()
 setup_theme()
 
 output_folder = "outputs/figures/"
+time_series_min = config_file["plots"]["time_series_min_default"]
 
 if not os.path.isdir(output_folder):
     os.makedirs(output_folder)
@@ -36,7 +38,9 @@ if __name__ == "__main__":
     # ======================================================
     # MCS installations, by off-gas status
 
-    installations_by_gas_status = cumsums_by_variable("off_gas", "Gas status")
+    installations_by_gas_status = process_data.cumsums_by_variable(
+        "off_gas", "Gas status"
+    )
 
     installations_by_gas_status_chart = time_series_comparison(
         data=installations_by_gas_status,
@@ -56,7 +60,9 @@ if __name__ == "__main__":
     # ======================================================
     # MCS installations, by rurality
 
-    installations_by_rurality = cumsums_by_variable("rurality_2_label", "Rurality")
+    installations_by_rurality = process_data.cumsums_by_variable(
+        "rurality_2_label", "Rurality"
+    )
 
     installations_by_rurality_chart = time_series_comparison(
         data=installations_by_rurality,
@@ -77,7 +83,7 @@ if __name__ == "__main__":
     # ======================================================
     # Proportions of new builds that have heat pumps
 
-    new_build_hp_proportion = get_new_hp_counts()
+    new_build_hp_proportion = process_data.get_new_hp_counts()
 
     new_build_hp_proportion_chart = (
         alt.Chart(
@@ -90,7 +96,7 @@ if __name__ == "__main__":
                 # domain ensures good margin at left/right of chart
                 "year",
                 title="Year",
-                scale=alt.Scale(domain=["2007-07-01", "2023-06-01"]),
+                scale=alt.Scale(domain=["2007-07-01", "2023-01-01"]),
             ),
             y=alt.Y("sum(value)", title="Number of EPCs"),
             # want heat pumps to be at the bottom of each bar - hacky but works
@@ -105,7 +111,7 @@ if __name__ == "__main__":
     # ======================================================
     # Cumulative number of new builds with heat pumps
 
-    new_build_hp_cumulative = get_new_hp_cumsums()
+    new_build_hp_cumulative = process_data.get_new_hp_cumsums()
 
     new_build_hp_cumulative_chart = (
         alt.Chart(
@@ -128,8 +134,8 @@ if __name__ == "__main__":
     # ======================================================
     # Cumulative MCS retrofits
 
-    ret = get_mcs_retrofits()
-    ret_cumsums = cumsums_by_variable("country", "wales_col", data=ret)
+    ret = process_data.get_mcs_retrofits()
+    ret_cumsums = process_data.cumsums_by_variable("country", "wales_col", data=ret)
     # this function works without separating by category - 'wales_col' is a whole column of "Wales" (not used)
 
     cumulative_retrofits_chart = (
@@ -142,7 +148,7 @@ if __name__ == "__main__":
             x=alt.X(
                 "date",
                 title="Date",
-                scale=alt.Scale(domain=["2015-01-01", ret_cumsums.date.max()]),
+                scale=alt.Scale(domain=[time_series_min, ret_cumsums.date.max()]),
             ),
             y="Number of heat pumps",
         )
@@ -161,7 +167,7 @@ if __name__ == "__main__":
         alt.Chart(
             electric_tenure,
             title="Fig. 2: Properties in Wales with only electric heating, split by tenure (N = "
-            + format_number(N)
+            + "{:,}".format(N)
             + ")",
         )
         .mark_bar()
@@ -232,6 +238,11 @@ if __name__ == "__main__":
     )
 
     # EPC, all
+    unknown_vals = len(wales_df.loc[wales_df.CURRENT_ENERGY_RATING == "unknown"])
+    if unknown_vals > 0:
+        logger.warning(
+            f"{unknown_vals} properties with unknown EPC ratings. These records will be removed from the count."
+        )
     proportions_bar_chart(
         # only one unknown EPC property so fine to just remove it
         wales_df.loc[wales_df.CURRENT_ENERGY_RATING != "unknown"],
@@ -274,7 +285,7 @@ if __name__ == "__main__":
         x_type="other",
     )
 
-    age_data = generate_age_data(wales_df)
+    age_data = process_data.generate_age_data(wales_df)
     age_prop_chart(
         age_data, "Fig. 9: Construction age bands and energy efficiencies", "age_prop"
     )
