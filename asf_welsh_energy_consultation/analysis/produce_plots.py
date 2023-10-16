@@ -4,9 +4,11 @@ Script to produce plots.
 """
 
 import altair as alt
+import os
 
+from asf_welsh_energy_consultation import config_file
 from asf_welsh_energy_consultation.getters.get_data import get_electric_tenure
-from asf_welsh_energy_consultation.pipeline.process_data import *
+from asf_welsh_energy_consultation.pipeline import process_data
 from asf_welsh_energy_consultation.getters.get_data import load_wales_df, load_wales_hp
 from asf_core_data.getters.data_getters import logger
 from asf_welsh_energy_consultation.pipeline.plotting import (
@@ -31,7 +33,9 @@ if __name__ == "__main__":
     # ======================================================
     # MCS installations, by off-gas status
 
-    installations_by_gas_status = cumsums_by_variable("off_gas", "Gas status")
+    installations_by_gas_status = process_data.cumsums_by_variable(
+        "off_gas", "Gas status"
+    )
 
     installations_by_gas_status_chart = time_series_comparison(
         data=installations_by_gas_status,
@@ -51,7 +55,9 @@ if __name__ == "__main__":
     # ======================================================
     # MCS installations, by rurality
 
-    installations_by_rurality = cumsums_by_variable("rurality_2_label", "Rurality")
+    installations_by_rurality = process_data.cumsums_by_variable(
+        "rurality_2_label", "Rurality"
+    )
 
     installations_by_rurality_chart = time_series_comparison(
         data=installations_by_rurality,
@@ -72,7 +78,7 @@ if __name__ == "__main__":
     # ======================================================
     # Proportions of new builds that have heat pumps
 
-    new_build_hp_proportion = get_new_hp_counts()
+    new_build_hp_proportion = process_data.get_new_hp_counts()
 
     new_build_hp_proportion_chart = (
         alt.Chart(
@@ -100,7 +106,7 @@ if __name__ == "__main__":
     # ======================================================
     # Cumulative number of new builds with heat pumps
 
-    new_build_hp_cumulative = get_new_hp_cumsums()
+    new_build_hp_cumulative = process_data.get_new_hp_cumsums()
 
     new_build_hp_cumulative_chart = (
         alt.Chart(
@@ -123,8 +129,8 @@ if __name__ == "__main__":
     # ======================================================
     # Cumulative MCS retrofits
 
-    ret = get_mcs_retrofits()
-    ret_cumsums = cumsums_by_variable("country", "wales_col", data=ret)
+    ret = process_data.get_mcs_retrofits()
+    ret_cumsums = process_data.cumsums_by_variable("country", "wales_col", data=ret)
     # this function works without separating by category - 'wales_col' is a whole column of "Wales" (not used)
 
     cumulative_retrofits_chart = (
@@ -274,7 +280,7 @@ if __name__ == "__main__":
         x_type="other",
     )
 
-    age_data = generate_age_data(wales_df)
+    age_data = process_data.generate_age_data(wales_df)
     age_prop_chart(
         age_data, "Fig. 9: Construction age bands and energy efficiencies", "age_prop"
     )

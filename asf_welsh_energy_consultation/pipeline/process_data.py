@@ -5,7 +5,7 @@ Functions to process and augment data.
 
 import pandas as pd
 
-from asf_welsh_energy_consultation.getters.get_data import *
+from asf_welsh_energy_consultation.getters import get_data
 from asf_core_data.getters.data_getters import logger
 
 
@@ -18,10 +18,10 @@ def get_enhanced_mcs():
     Returns:
         pd.DataFrame: Dataset as described above.
     """
-    mcs = get_mcs_domestic()
-    og = get_offgas()
-    countries = get_countries()
-    rural = get_rurality()
+    mcs = get_data.get_mcs_domestic()
+    og = get_data.get_offgas()
+    countries = get_data.get_countries()
+    rural = get_data.get_rurality()
 
     # join with off-gas data
     mcs = mcs.merge(og, on="postcode", how="left")
@@ -111,7 +111,7 @@ def cumsums_by_variable(variable, new_var_name, data=enhanced_mcs):
 
 # PROCESSING EPC
 
-wales_epc = get_wales_processed_epc()
+wales_epc = get_data.get_wales_processed_epc()
 
 
 def get_wales_epc_new():
@@ -210,8 +210,8 @@ def mcs_epc_first_records():
     Returns:
         pd.DataFrame: MCS records joined with first EPC.
     """
-    mcs_epc = get_mcs_epc_domestic()
-    regions = get_countries()
+    mcs_epc = get_data.get_mcs_epc_domestic()
+    regions = get_data.get_countries()
 
     mcs_epc = mcs_epc.merge(regions, on="postcode", how="left")
     if mcs_epc.country.isna().sum() > 0:
