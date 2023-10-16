@@ -25,8 +25,6 @@ for file_path in fig_output_path.values():
 
 setup_theme()
 
-# time_series_min = config["plots"]["time_series_min_default"]
-
 
 def time_series_comparison(
     data,
@@ -53,7 +51,7 @@ def time_series_comparison(
         x_var (str, optional): x variable. Defaults to "date:T".
         x_title (str, optional): x-axis title. Defaults to "Date".
         domain_min (str, optional): x-axis minimum. Defaults to "2015-01-01".
-        domain_max (str, optional): x-axis maximum. Defaults to "2023-01-01".
+        domain_max (str, optional): x-axis maximum. Defaults to max date of series.
         width (int, optional): Chart width. Defaults to 600.
         height (int, optional): Chart height. Defaults to 300.
 

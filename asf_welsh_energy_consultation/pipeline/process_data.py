@@ -6,6 +6,7 @@ Functions to process and augment data.
 import pandas as pd
 
 from asf_welsh_energy_consultation.getters.get_data import *
+from asf_core_data.getters.data_getters import logger
 
 
 # PROCESSING MCS
@@ -28,15 +29,23 @@ def get_enhanced_mcs():
 
     # join with regions in order to filter to Wales
     mcs = mcs.merge(countries, on="postcode", how="left")
+    if mcs.country.isna().sum() > 0:
+        logger.warning(
+            f"{mcs.country.isna().sum()} MCS installation records have no country match."
+            f"Potential loss of data when filtering for Wales."
+        )
     mcs = mcs.loc[mcs["country"] == "Wales"].reset_index(drop=True)
-    # 1203 records with no match - 273 are Northern Ireland which leaves 918
+    # There will be records with no match
     # Some will be new postcodes (new build developments)
     # and some may be expired postcodes
     # In future, implement new solution that uses outward codes
 
     # join with rurality data
     mcs = mcs.merge(rural, on="postcode", how="left")
-    # only 13 postcodes lost in this merge
+    if mcs.rurality_10_code.isna().sum() > 0:
+        logger.warning(
+            f"Loss of data: {mcs.rurality_10_code.isna().sum()} Welsh MCS installation records have no rurality code match."
+        )
 
     # add custom rurality column (rurality "type 7": all different types of urban mapped to Urban)
     mcs["rurality_7"] = mcs["rurality_10_label"].replace(
@@ -134,8 +143,13 @@ def get_new_hp_counts():
         pd.DataFrame: New build HP counts.
     """
     wales_epc_new = get_wales_epc_new()
-    # 2023 not yet complete so drop any post-2022 data
-    wales_epc_new = wales_epc_new.loc[wales_epc_new["INSPECTION_DATE"] < "2023-01-01"]
+    # Requires full year of data so remove most recent year if it doesn't have 12 months of data
+    max_date = wales_epc_new["INSPECTION_DATE"].max()
+    max_year = max_date.year
+    if max_date != pd.to_datetime(f"{max_year}-12-31"):
+        wales_epc_new = wales_epc_new.loc[
+            wales_epc_new["INSPECTION_DATE"] < f"{max_year}-01-01"
+        ]
 
     new_hp_counts = (
         wales_epc_new.groupby(["year", "HP_INSTALLED"])
@@ -200,6 +214,11 @@ def mcs_epc_first_records():
     regions = get_countries()
 
     mcs_epc = mcs_epc.merge(regions, on="postcode", how="left")
+    if mcs_epc.country.isna().sum() > 0:
+        logger.warning(
+            f"{mcs_epc.country.isna().sum()} joined MCS-EPC records have no country match. "
+            f"Potential loss of data when filtering for Wales."
+        )
     mcs_epc = mcs_epc.loc[mcs_epc["country"] == "Wales"].reset_index(drop=True)
 
     first_records = (

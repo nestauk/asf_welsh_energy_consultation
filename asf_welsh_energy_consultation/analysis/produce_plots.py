@@ -8,6 +8,7 @@ import altair as alt
 from asf_welsh_energy_consultation.getters.get_data import get_electric_tenure
 from asf_welsh_energy_consultation.pipeline.process_data import *
 from asf_welsh_energy_consultation.getters.get_data import load_wales_df, load_wales_hp
+from asf_core_data.getters.data_getters import logger
 from asf_welsh_energy_consultation.pipeline.plotting import (
     proportions_bar_chart,
     age_prop_chart,
@@ -20,6 +21,7 @@ alt.data_transformers.disable_max_rows()
 setup_theme()
 
 output_folder = "outputs/figures/"
+time_series_min = config_file["plots"]["time_series_min_default"]
 
 if not os.path.isdir(output_folder):
     os.makedirs(output_folder)
@@ -83,7 +85,7 @@ if __name__ == "__main__":
                 # domain ensures good margin at left/right of chart
                 "year",
                 title="Year",
-                scale=alt.Scale(domain=["2007-07-01", "2023-06-01"]),
+                scale=alt.Scale(domain=["2007-07-01", "2023-01-01"]),
             ),
             y=alt.Y("sum(value)", title="Number of EPCs"),
             # want heat pumps to be at the bottom of each bar - hacky but works
@@ -135,7 +137,7 @@ if __name__ == "__main__":
             x=alt.X(
                 "date",
                 title="Date",
-                scale=alt.Scale(domain=["2015-01-01", ret_cumsums.date.max()]),
+                scale=alt.Scale(domain=[time_series_min, ret_cumsums.date.max()]),
             ),
             y="Number of heat pumps",
         )
@@ -225,6 +227,11 @@ if __name__ == "__main__":
     )
 
     # EPC, all
+    unknown_vals = len(wales_df.loc[wales_df.CURRENT_ENERGY_RATING == "unknown"])
+    if unknown_vals > 0:
+        logger.warning(
+            f"{unknown_vals} properties with unknown EPC ratings. These records will be removed from the count."
+        )
     proportions_bar_chart(
         # only one unknown EPC property so fine to just remove it
         wales_df.loc[wales_df.CURRENT_ENERGY_RATING != "unknown"],
