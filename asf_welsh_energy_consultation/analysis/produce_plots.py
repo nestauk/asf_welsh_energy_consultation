@@ -382,6 +382,6 @@ if __name__ == "__main__":
     wales_df = load_wales_df(from_csv=False)
     pc_df = pc_to_coords_df()
 
-    hp_hex_counts = generate_hex_counts(wales_df, pc_df)
+    hp_hex_counts = process_data.generate_hex_counts(wales_df, pc_df)
 
     plot_kepler_graph(hp_hex_counts, "hp_map")
