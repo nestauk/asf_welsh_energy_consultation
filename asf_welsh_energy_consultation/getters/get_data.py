@@ -13,7 +13,7 @@ from asf_core_data.getters.mcs_getters.get_mcs_installations import (
 
 from asf_core_data.getters.epc.data_batches import get_batch_path
 from asf_core_data.config import base_config
-from asf_core_data.getters.data_getters import download_core_data, logger
+from asf_core_data.getters.data_getters import download_core_data, logger, load_data
 
 import pandas as pd
 import numpy as np
@@ -445,3 +445,19 @@ def load_wales_hp(wales_epc):
     wales_hp = wales_epc.loc[wales_epc.HP_INSTALLED].reset_index(drop=True)
 
     return wales_hp
+
+
+def pc_to_coords_df():
+    pc_df = load_data(
+        data_path="S3",
+        file_path="inputs/supplementary_data/geospatial/ukpostcodes_to_coordindates.csv",
+    )
+    pc_df = pc_df.rename(
+        columns={
+            "postcode": "POSTCODE",
+            "latitude": "LATITUDE",
+            "longitude": "LONGITUDE",
+        }
+    )
+
+    return pc_df

@@ -20,9 +20,12 @@ The remainder of the charts in the response can be produced from code in the rep
 - Run `make inputs-pull` to pull the zipped static data from S3 and put it in `/inputs`
 - Run `python asf_welsh_energy_consultation/analysis/produce_plots.py --local_data_dir <YOUR_LOCAL_DIR>`. You need to specify the path to the local
   directory where your local copy of the EPC data is/will be saved by replacing `<YOUR_LOCAL_DIR>` with the path to your "ASF_data" directory or equivalent.
-  If you don't have a local directory for ASF core data, you can create a folder called "ASF_data" in your home directory. You can specify which
-  batch of EPC data to download and MCS data to load from S3 by passing the `--epc_batch` and `--mcs_batch` arguments, both
-  default to downloading/loading the newest data from S3, respectively. Run `python asf_welsh_energy_consultation/analysis/produce_plots.py -h` for more info.
+  If you don't have a local directory for ASF core data, you can create a folder called "ASF_data" in your home directory.
+
+- You can specify which batch of EPC data to download and MCS data to load from S3 by passing the `--epc_batch` and `--mcs_batch` arguments, both
+  default to downloading/loading the newest data from S3, respectively. You can also specify which set of supplementary data should be used by passing
+  the `--supp_data` argument followed by the name of the directory, e.g. data_202310. See the `Historical analyses` section below to see which version was used for each analysis.
+  Run `python asf_welsh_energy_consultation/analysis/produce_plots.py -h` for more info.
 
 The script should generate the following six plots which will be saved in your local repo in `outputs/figures`:
 
@@ -40,6 +43,8 @@ It should generate a further 10 plots, five in English and five in Welsh, saved 
 - `epc_hp_private_retrofit[_welsh].html`
 - `epc_hp_private[_welsh].html`
 - `hp_tenure[_welsh].html`
+
+An additional figure, `hp_map.html`, should be saved in `outputs/figures/english`.
 
 ## Skeleton folder structure
 
@@ -64,8 +69,18 @@ outputs/
 
 Versions/batches of data used for previous analysis are listed below.
 
+October 2023 analysis:
+
+- Supplementary data: data_202310
+- EPC: 2023_Q2_complete (preprocessed)
+- mcs_installations_231009.csv
+- mcs_installations_epc_full_231009.csv
+- off-gas-live-postcodes-2022.xlsx - check [here](https://www.xoserve.com/a-to-z/) for updates
+- rurality.ods - 2011 Rural Urban Classification for small area geographies, see [here](https://www.ons.gov.uk/methodology/geography/geographicalproducts/ruralurbanclassifications)
+
 April 2023 analysis:
 
+- Supplementary data: data_202304
 - EPC: 2022_Q4_complete (preprocessed)
 - mcs_installations_230315.csv
 - mcs_installations_epc_full_230315.csv

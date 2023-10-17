@@ -8,13 +8,18 @@ import os
 
 from asf_welsh_energy_consultation import config_file
 from asf_welsh_energy_consultation.getters.get_data import get_electric_tenure
+from asf_welsh_energy_consultation.getters.get_data import (
+    load_wales_df,
+    load_wales_hp,
+    pc_to_coords_df,
+)
 from asf_welsh_energy_consultation.pipeline import process_data
-from asf_welsh_energy_consultation.getters.get_data import load_wales_df, load_wales_hp
 from asf_core_data.getters.data_getters import logger
 from asf_welsh_energy_consultation.pipeline.plotting import (
     proportions_bar_chart,
     age_prop_chart,
     time_series_comparison,
+    plot_kepler_graph,
 )
 
 from nesta_ds_utils.viz.altair.formatting import setup_theme
@@ -372,3 +377,11 @@ if __name__ == "__main__":
         "age_prop_welsh",
         language="welsh",
     )
+
+    # Map of Welsh HPs
+    wales_df = load_wales_df(from_csv=False)
+    pc_df = pc_to_coords_df()
+
+    hp_hex_counts = process_data.generate_hex_counts(wales_df, pc_df)
+
+    plot_kepler_graph(hp_hex_counts, "hp_map")
