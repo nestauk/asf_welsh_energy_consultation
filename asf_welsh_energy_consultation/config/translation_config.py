@@ -24,3 +24,10 @@ housing_stock_text = {
 }
 
 age_band_text = {"english": "Age band", "welsh": "Band oedran"}
+
+construction_age_band = {
+    "England and Wales: before 1900": "Cyn 1900",
+    "Pre-1900": "Cyn 1900",
+    "2007 onwards": "2007 ymlaen",
+    "unknown": "Anhysbys",
+}

@@ -31,7 +31,7 @@ def get_enhanced_mcs():
     mcs = mcs.merge(countries, on="postcode", how="left")
     if mcs.country.isna().sum() > 0:
         logger.warning(
-            f"{mcs.country.isna().sum()} MCS installation records have no country match."
+            f"{mcs.country.isna().sum()} MCS installation records have no country match. "
             f"Potential loss of data when filtering for Wales."
         )
     mcs = mcs.loc[mcs["country"] == "Wales"].reset_index(drop=True)
@@ -114,14 +114,37 @@ def cumsums_by_variable(variable, new_var_name, data=enhanced_mcs):
 wales_epc = get_data.get_wales_processed_epc()
 
 
-def get_wales_epc_new():
+def correct_new_dwelling_labels():
+    """
+    For each unique property in the pandas DataFrame that has more than one record where `TRANSACTION_TYPE == "new dwelling"`,
+    replace "new dwelling" with "unknown" for each row except the row with the earliest date.
+    Returns:
+        pd.DataFrame: Wales EPC certificates
+    """
+    wales_epc["rank"] = wales_epc.groupby("BUILDING_REFERENCE_NUMBER")[
+        "INSPECTION_DATE"
+    ].rank("dense")
+    df = wales_epc.copy()
+    df["TRANSACTION_TYPE"] = df.apply(
+        lambda row: "unknown"
+        if row["TRANSACTION_TYPE"] == "new dwelling" and row["rank"] > 1
+        else row["TRANSACTION_TYPE"],
+        axis=1,
+    )
+
+    return df
+
+
+def get_wales_new_builds_epc():
     """Get first EPC certificates for any property labelled as "new dwelling".
 
     Returns:
         pd.DataFrame: New build EPC certificates.
     """
+    wales_epc_new = correct_new_dwelling_labels()
+
     wales_epc_new = (
-        wales_epc.loc[wales_epc["TRANSACTION_TYPE"] == "new dwelling"][
+        wales_epc_new.loc[wales_epc["TRANSACTION_TYPE"] == "new dwelling"][
             ["UPRN", "INSPECTION_DATE", "HP_INSTALLED"]
         ]
         .dropna(subset="INSPECTION_DATE")
@@ -136,13 +159,13 @@ def get_wales_epc_new():
     return wales_epc_new
 
 
-def get_new_hp_counts():
+def get_new_builds_hp_counts():
     """Get counts of new builds with HPs for each year.
 
     Returns:
         pd.DataFrame: New build HP counts.
     """
-    wales_epc_new = get_wales_epc_new()
+    wales_epc_new = get_wales_new_builds_epc()
     # Requires full year of data so remove most recent year if it doesn't have 12 months of data
     max_date = wales_epc_new["INSPECTION_DATE"].max()
     max_year = max_date.year
@@ -183,7 +206,7 @@ def get_new_hp_cumsums():
     Returns:
         pd.DataFrame: New build HPs cumulative totals.
     """
-    wales_epc_new = get_wales_epc_new()
+    wales_epc_new = get_wales_new_builds_epc()
 
     new_hps = wales_epc_new.loc[wales_epc_new["HP_INSTALLED"]].reset_index(drop=True)
     new_hps_sums = (

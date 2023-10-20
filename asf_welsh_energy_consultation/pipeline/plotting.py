@@ -23,6 +23,7 @@ for file_path in fig_output_path.values():
     if not os.path.isdir(file_path):
         os.makedirs(file_path)
 
+# Enable Nesta theme for altair figures
 setup_theme()
 
 

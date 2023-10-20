@@ -1,4 +1,4 @@
-# File: asf_welsh_energy_consultation/analysis/produce_plots.py
+# File: asf_welsh_energy_consultation/analysis/produce_plots_and_stats.py
 """
 Script to produce plots.
 """
@@ -7,6 +7,7 @@ import altair as alt
 import os
 
 from asf_welsh_energy_consultation import config_file
+from asf_welsh_energy_consultation.config import translation_config
 from asf_welsh_energy_consultation.getters.get_data import get_electric_tenure
 from asf_welsh_energy_consultation.pipeline import process_data
 from asf_welsh_energy_consultation.getters.get_data import load_wales_df, load_wales_hp
@@ -78,7 +79,7 @@ if __name__ == "__main__":
     # ======================================================
     # Proportions of new builds that have heat pumps
 
-    new_build_hp_proportion = process_data.get_new_hp_counts()
+    new_build_hp_proportion = process_data.get_new_builds_hp_counts()
 
     new_build_hp_proportion_chart = (
         alt.Chart(
@@ -129,13 +130,15 @@ if __name__ == "__main__":
     # ======================================================
     # Cumulative MCS retrofits
 
-    ret = process_data.get_mcs_retrofits()
-    ret_cumsums = process_data.cumsums_by_variable("country", "wales_col", data=ret)
+    mcs_retrofits = process_data.get_mcs_retrofits()
+    mcs_retrofit_cumsums = process_data.cumsums_by_variable(
+        "country", "wales_col", data=mcs_retrofits
+    )
     # this function works without separating by category - 'wales_col' is a whole column of "Wales" (not used)
 
     cumulative_retrofits_chart = (
         alt.Chart(
-            ret_cumsums,
+            mcs_retrofit_cumsums,
             title="Cumulative number of MCS certified heat pump retrofits in Wales",
         )
         .mark_line()
@@ -143,7 +146,9 @@ if __name__ == "__main__":
             x=alt.X(
                 "date",
                 title="Date",
-                scale=alt.Scale(domain=[time_series_min, ret_cumsums.date.max()]),
+                scale=alt.Scale(
+                    domain=[time_series_min, mcs_retrofit_cumsums.date.max()]
+                ),
             ),
             y="Number of heat pumps",
         )
@@ -185,13 +190,15 @@ if __name__ == "__main__":
     # English plots
 
     # Key statistics
-    print("Number of heat pumps:", len(wales_hp))
-    print("Number of properties in EPC:", len(wales_df))
-    print(
-        "Estimated percentage of properties with a heat pump:",
-        "{:.2%}".format(len(wales_hp) / len(wales_df)),
+    intro = "Summary statistics for heat pumps in Wales\n\n"
+    total_hp = f"Number of heat pumps: {len(wales_hp)}\n"
+    total_epc = f"Number of properties in EPC: {len(wales_df)}\n"
+    hp_perc = "Estimated percentage of properties with a heat pump: \
+        {:.2%}\n\n".format(
+        len(wales_hp) / len(wales_df)
     )
-    print(wales_hp.TENURE.value_counts(normalize=True))
+
+    tenure_value_counts = wales_hp.TENURE.value_counts(normalize=True).to_string()
 
     epc_c_or_above_and_good_walls = wales_df.loc[
         wales_df["CURRENT_ENERGY_RATING"].isin(["A", "B", "C"])
@@ -202,23 +209,27 @@ if __name__ == "__main__":
         epc_c_or_above_and_good_walls["ROOF_ENERGY_EFF"].isin(["Good", "Very Good"])
     ]
 
-    print(
-        "Number of EPC C+ properties with good or very good wall insulation:",
-        len(epc_c_or_above_and_good_walls),
-    )
-    print(
-        "As a proportion of properties in EPC:",
-        len(epc_c_or_above_and_good_walls) / len(wales_df),
-    )
+    epc_c_wall = f"\n\nNumber of EPC C+ properties with good or very good wall insulation: {len(epc_c_or_above_and_good_walls)}\n"
 
-    print(
-        "\nNumber of EPC C+ properties with good or very good wall and roof insulation:",
-        len(epc_c_or_above_and_good_walls_and_roof),
-    )
-    print(
-        "As a proportion of properties in EPC:",
-        len(epc_c_or_above_and_good_walls_and_roof) / len(wales_df),
-    )
+    epc_c_wall_proportion = f"As a proportion of properties in EPC: {len(epc_c_or_above_and_good_walls) / len(wales_df)}\n"
+
+    epc_c_wall_roof = f"\n\nNumber of EPC C+ properties with good or very good wall and roof insulation: {len(epc_c_or_above_and_good_walls_and_roof)}\n"
+    epc_c_wall_roof_proportion = f"As a proportion of properties in EPC: {len(epc_c_or_above_and_good_walls_and_roof) / len(wales_df)}"
+
+    with open(os.path.join(output_folder, "stats.txt"), "w") as stats_txt:
+        stats_txt.writelines(
+            [
+                intro,
+                total_hp,
+                total_epc,
+                hp_perc,
+                tenure_value_counts,
+                epc_c_wall,
+                epc_c_wall_proportion,
+                epc_c_wall_roof,
+                epc_c_wall_roof_proportion,
+            ]
+        )
 
     # Tenure of Welsh HPs
     proportions_bar_chart(
@@ -288,18 +299,13 @@ if __name__ == "__main__":
     ## Welsh plots
 
     welsh_replacements = {
-        "TENURE": {
-            "Owner-occupied": "Perchen-feddiannaeth",
-            "Socially rented": "Rhentu cymdeithasol",
-            "Privately rented": "Rhentu preifat",
-            "Unknown": "Anhysbys",
-        },
-        "CONSTRUCTION_AGE_BAND": {
-            "England and Wales: before 1900": "Cyn 1900",
-            "Pre-1900": "Cyn 1900",
-            "2007 onwards": "2007 ymlaen",
-            "unknown": "Anhysbys",
-        },
+        "TENURE": dict(
+            zip(
+                translation_config.tenure_list["english"],
+                translation_config.tenure_list["welsh"],
+            )
+        ),
+        "CONSTRUCTION_AGE_BAND": translation_config.construction_age_band,
     }
 
     for df in [wales_df, wales_hp, age_data]:

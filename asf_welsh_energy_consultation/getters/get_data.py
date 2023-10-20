@@ -328,7 +328,7 @@ def get_mcs_epc_domestic():
 
 
 def get_electric_tenure():
-    """Get census 2021 data on electric heating vs tenure.
+    """Get census data on electric heating vs tenure.
 
     Returns:
         pd.DataFrame: Dataset of tenure counts for properties on electric heating in Wales.
@@ -420,6 +420,7 @@ def load_wales_df(from_csv=True):
         )
         # if CONSTRUCTION_AGE_BAND is unknown and TRANSACTION_TYPE is new dwelling,
         # assume construction age is >2007 because EPCs started in 2008
+        # This is required for older EPC datasets that were processed before this processing step was added to asf_core_data
         wales_epc["CONSTRUCTION_AGE_BAND"].loc[
             (wales_epc.CONSTRUCTION_AGE_BAND == "unknown")
             & (wales_epc.TRANSACTION_TYPE == "new dwelling")

@@ -18,7 +18,7 @@ The remainder of the charts in the response can be produced from code in the rep
   - Install packages listed in `requirements.txt`
 - Activate conda environment: `conda activate asf_welsh_energy_consultation`
 - Run `make inputs-pull` to pull the zipped static data from S3 and put it in `/inputs`
-- Run `python asf_welsh_energy_consultation/analysis/produce_plots.py --local_data_dir <YOUR_LOCAL_DIR>`. You need to specify the path to the local
+- Run `python asf_welsh_energy_consultation/analysis/produce_plots_and_stats.py --local_data_dir <YOUR_LOCAL_DIR>`. You need to specify the path to the local
   directory where your local copy of the EPC data is/will be saved by replacing `<YOUR_LOCAL_DIR>` with the path to your "ASF_data" directory or equivalent.
   If you don't have a local directory for ASF core data, you can create a folder called "ASF_data" in your home directory. You can specify which
   batch of EPC data to download and MCS data to load from S3 by passing the `--epc_batch` and `--mcs_batch` arguments, both
@@ -41,20 +41,26 @@ It should generate a further 10 plots, five in English and five in Welsh, saved 
 - `epc_hp_private[_welsh].html`
 - `hp_tenure[_welsh].html`
 
+It will also generate a `stats.txt` text file containing some summary statistics.
+
 ## Skeleton folder structure
 
 ```
 asf_welsh_energy_consultation/
 ├─ analysis/
-│  ├─ produce_plots.py - produces plots
+│  ├─ produce_plots_and_stats.py - produces plots
 │  ├─ unused_plots.py - unused plotting functions from August '22
+├─ config
+│  ├─ base.yaml - global variables
+│  ├─ translation_config.py - English to Welsh translations for producing figures translated into Welsh
 ├─ getters/
 │  ├─ get_data.py - getters for raw data
 ├─ pipeline/
+│  ├─ plotting.py - functions for plotting
 │  ├─ process_data.py - functions to process and enhance raw data
 │  ├─ unused_processing.py - unused processing functions from August '22
 inputs/
-├─ data/ - data files, a mixture of csv, xlsx and ods
+├─ data_[YYYYMM]/ - data files, a mixture of csv, xlsx and ods
 │  ├─ postcodes/ - individual subfolders for each postcode region
 outputs/
 ├─ figures/ - where charts are saved
