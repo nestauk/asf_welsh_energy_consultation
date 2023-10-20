@@ -38,7 +38,6 @@ def get_enhanced_mcs():
     # There will be records with no match
     # Some will be new postcodes (new build developments)
     # and some may be expired postcodes
-    # In future, implement new solution that uses outward codes
 
     # join with rurality data
     mcs = mcs.merge(rural, on="postcode", how="left")

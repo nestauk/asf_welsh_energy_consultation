@@ -4,7 +4,6 @@ Data getters.
 """
 
 from asf_welsh_energy_consultation import PROJECT_DIR
-from asf_welsh_energy_consultation import config_file
 
 from asf_core_data import load_preprocessed_epc_data, get_mcs_installations
 from asf_core_data.getters.mcs_getters.get_mcs_installations import (
@@ -42,7 +41,7 @@ def create_argparser():
 
     parser.add_argument(
         "--supp_data",
-        help="Name of directory where supplementary data is stored",
+        help='Name of directory where supplementary data is stored in the form `data_YYYYMM`. Defaults to "newest"',
         default="newest",
         type=str,
     )
