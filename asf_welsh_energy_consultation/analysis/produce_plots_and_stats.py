@@ -5,13 +5,13 @@ Script to produce plots.
 
 import altair as alt
 import os
+import logging
 
 from asf_welsh_energy_consultation import config_file
 from asf_welsh_energy_consultation.config import translation_config
 from asf_welsh_energy_consultation.getters.get_data import get_electric_tenure
 from asf_welsh_energy_consultation.pipeline import process_data
 from asf_welsh_energy_consultation.getters.get_data import load_wales_df, load_wales_hp
-from asf_core_data.getters.data_getters import logger
 from asf_welsh_energy_consultation.pipeline.plotting import (
     proportions_bar_chart,
     age_prop_chart,
@@ -20,7 +20,9 @@ from asf_welsh_energy_consultation.pipeline.plotting import (
 
 from nesta_ds_utils.viz.altair.formatting import setup_theme
 
+logger = logging.getLogger(__name__)
 alt.data_transformers.disable_max_rows()
+# Enable Nesta theme for altair figures
 setup_theme()
 
 output_folder = "outputs/figures/"
@@ -47,10 +49,8 @@ if __name__ == "__main__":
         y_var="Number of heat pumps:Q",
         y_title="Number of heat pump installations",
         color_var="Gas status:N",
-    ).configure_title(fontSize=20)
-
-    installations_by_gas_status_chart.save(
-        output_folder + "installations_by_gas_status.html"
+        filename="installations_by_gas_status",
+        output_dir=output_folder,
     )
 
     # ======================================================
@@ -70,16 +70,15 @@ if __name__ == "__main__":
         y_title="Number of heat pump installations",
         color_var="Rurality:N",
         domain_max=installations_by_rurality.date.max(),
-    )
-
-    installations_by_rurality_chart.save(
-        output_folder + "installations_by_rurality.html"
+        filename="installations_by_rurality",
+        output_dir=output_folder,
     )
 
     # ======================================================
     # Proportions of new builds that have heat pumps
 
     new_build_hp_proportion = process_data.get_new_builds_hp_counts()
+    max_date = new_build_hp_proportion["year"].max()
 
     new_build_hp_proportion_chart = (
         alt.Chart(
@@ -92,7 +91,7 @@ if __name__ == "__main__":
                 # domain ensures good margin at left/right of chart
                 "year",
                 title="Year",
-                scale=alt.Scale(domain=["2007-07-01", "2023-01-01"]),
+                scale=alt.Scale(domain=["2007-07-01", f"{max_date.year}-07-01"]),
             ),
             y=alt.Y("sum(value)", title="Number of EPCs"),
             # want heat pumps to be at the bottom of each bar - hacky but works
@@ -103,11 +102,12 @@ if __name__ == "__main__":
     )
 
     new_build_hp_proportion_chart.save(output_folder + "new_build_hp_proportion.html")
+    logger.info(f"Saved: {os.path.join(output_folder, 'new_build_hp_proportion.html')}")
 
     # ======================================================
     # Cumulative number of new builds with heat pumps
 
-    new_build_hp_cumulative = process_data.get_new_hp_cumsums()
+    new_build_hp_cumulative = process_data.get_new_builds_hp_cumsums()
 
     new_build_hp_cumulative_chart = (
         alt.Chart(
@@ -126,6 +126,7 @@ if __name__ == "__main__":
     )
 
     new_build_hp_cumulative_chart.save(output_folder + "new_build_hp_cumulative.html")
+    logger.info(f"Saved: {os.path.join(output_folder, 'new_build_hp_cumulative.html')}")
 
     # ======================================================
     # Cumulative MCS retrofits
@@ -156,6 +157,7 @@ if __name__ == "__main__":
     )
 
     cumulative_retrofits_chart.save(output_folder + "cumulative_retrofits.html")
+    logger.info(f"Saved: {os.path.join(output_folder, 'cumulative_retrofits.html')}")
 
     # ======================================================
     # Split of properties on electric heating by tenure
@@ -180,6 +182,7 @@ if __name__ == "__main__":
     ).configure_title(fontSize=20)
 
     electric_tenure_chart.save(output_folder + "electric_tenure.html")
+    logger.info(f"Saved: {os.path.join(output_folder, 'electric_tenure.html')}")
 
     # ======================================================
     # Original plots and stats
@@ -247,10 +250,9 @@ if __name__ == "__main__":
     unknown_vals = len(wales_df.loc[wales_df.CURRENT_ENERGY_RATING == "unknown"])
     if unknown_vals > 0:
         logger.warning(
-            f"{unknown_vals} properties with unknown EPC ratings. These records will be removed from the count."
+            f"{unknown_vals} properties with unknown EPC ratings. These records will be removed from the count of EPC ratings for all Welsh properties."
         )
     proportions_bar_chart(
-        # only one unknown EPC property so fine to just remove it
         wales_df.loc[wales_df.CURRENT_ENERGY_RATING != "unknown"],
         "CURRENT_ENERGY_RATING",
         "Fig. 5: EPC ratings of all Welsh properties",

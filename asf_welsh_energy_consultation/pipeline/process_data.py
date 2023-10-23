@@ -4,10 +4,11 @@ Functions to process and augment data.
 """
 
 import pandas as pd
+import logging
 
 from asf_welsh_energy_consultation.getters import get_data
-from asf_core_data.getters.data_getters import logger
 
+logger = logging.getLogger(__name__)
 
 # PROCESSING MCS
 
@@ -117,6 +118,7 @@ def correct_new_dwelling_labels():
     """
     For each unique property in the pandas DataFrame that has more than one record where `TRANSACTION_TYPE == "new dwelling"`,
     replace "new dwelling" with "unknown" for each row except the row with the earliest date.
+
     Returns:
         pd.DataFrame: Wales EPC certificates
     """
@@ -143,7 +145,7 @@ def get_wales_new_builds_epc():
     wales_epc_new = correct_new_dwelling_labels()
 
     wales_epc_new = (
-        wales_epc_new.loc[wales_epc["TRANSACTION_TYPE"] == "new dwelling"][
+        wales_epc_new.loc[wales_epc_new["TRANSACTION_TYPE"] == "new dwelling"][
             ["UPRN", "INSPECTION_DATE", "HP_INSTALLED"]
         ]
         .dropna(subset="INSPECTION_DATE")
@@ -166,6 +168,7 @@ def get_new_builds_hp_counts():
     """
     wales_epc_new = get_wales_new_builds_epc()
     # Requires full year of data so remove most recent year if it doesn't have 12 months of data
+    wales_epc_new["INSPECTION_DATE"] = pd.to_datetime(wales_epc_new["INSPECTION_DATE"])
     max_date = wales_epc_new["INSPECTION_DATE"].max()
     max_year = max_date.year
     if max_date != pd.to_datetime(f"{max_year}-12-31"):
@@ -199,7 +202,7 @@ def get_new_builds_hp_counts():
     return new_hp_counts
 
 
-def get_new_hp_cumsums():
+def get_new_builds_hp_cumsums():
     """Get cumulative total of new build HPs.
 
     Returns:

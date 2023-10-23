@@ -8,11 +8,13 @@ import altair as alt
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import os
+import logging
 
 from asf_welsh_energy_consultation.config import translation_config
 from asf_welsh_energy_consultation import config_file
-from asf_core_data.getters.data_getters import logger
 from nesta_ds_utils.viz.altair.formatting import setup_theme
+
+logger = logging.getLogger(__name__)
 
 fig_output_path = {
     "english": "outputs/figures/english/",
@@ -33,6 +35,8 @@ def time_series_comparison(
     y_var,
     y_title,
     color_var,
+    filename,
+    output_dir,
     x_var="date:T",
     x_title="Date",
     domain_min=None,
@@ -49,6 +53,8 @@ def time_series_comparison(
         y_var (str): y variable.
         y_title (str): y-axis title.
         color_var (str): Variable to split by.
+        filename (str): Filename for saving chart.
+        output_dir (str): Directory to save chart to.
         x_var (str, optional): x variable. Defaults to "date:T".
         x_title (str, optional): x-axis title. Defaults to "Date".
         domain_min (str, optional): x-axis minimum. Defaults to "2015-01-01".
@@ -57,7 +63,7 @@ def time_series_comparison(
         height (int, optional): Chart height. Defaults to 300.
 
     Returns:
-        alt.Chart: Base altair chart.
+        alt.Chart: Saves generated altair chart.
     """
     if domain_min is None:
         domain_min = config_file["plots"]["time_series_min_default"]
@@ -81,7 +87,9 @@ def time_series_comparison(
         .properties(width=width, height=height)
     )
 
-    return chart
+    chart = chart.configure_title(fontSize=20)
+    chart.save(os.path.join(output_dir, f"{filename}.html"))
+    logger.info(f"Saved: {os.path.join(output_dir, filename)}.html")
 
 
 def proportions_bar_chart(
@@ -149,7 +157,7 @@ def proportions_bar_chart(
 
     chart.save(fig_output_path[language] + filename + ".html")
 
-    print("Saved: " + filename + ".html")
+    logger.info(f"Saved: {os.path.join(fig_output_path[language], filename)}.html")
 
 
 # matplotlib only cycles through 10 colours, so manually defining 11 here to cover all age categories
@@ -273,4 +281,4 @@ def age_prop_chart(base_data, title, filename, language="english"):
 
     plt.savefig(fig_output_path[language] + filename + ".png", bbox_inches="tight")
 
-    print("Saved: " + filename + ".png")
+    logger.info(f"Saved: {os.path.join(fig_output_path[language], filename)}.png")

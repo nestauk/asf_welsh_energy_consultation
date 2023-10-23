@@ -245,7 +245,7 @@ def get_rurality():
     return oa_rural
 
 
-def check_local_epc(epc_processing_version=None, download_core_data_epc_version=None):
+def check_local_epc(epc_processing_version, download_core_data_epc_version):
     """
     Checks local directory for relevant EPC batch and downloads relevant EPC batch from S3 to local directory if not found.
     """
