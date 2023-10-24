@@ -134,10 +134,15 @@ def get_countries():
     files = os.listdir(postcode_folder)
     postcode_df = pd.concat(
         # Only need postcode and LA code cols
-        (pd.read_csv(postcode_folder / file, header=None)[[0, 8]] for file in files),
+        (
+            pd.read_csv(os.path.join(postcode_folder, file), header=0)[
+                ["pcd", "osward"]
+            ]
+            for file in files
+        ),
         ignore_index=True,
     )
-    postcode_df = postcode_df.rename(columns={0: "postcode", 8: "la_code"})
+    postcode_df = postcode_df.rename(columns={"pcd": "postcode", "osward": "la_code"})
 
     postcode_df["postcode"] = postcode_df["postcode"].str.replace(" ", "")
 
@@ -148,10 +153,19 @@ def get_countries():
         "W": "Wales",
         "S": "Scotland",
         "N": "Northern Ireland",
+        "L": "Channel Islands",
+        "M": "Isle of Man",
         " ": np.nan,
     }
+
     postcode_df["country"] = (
-        postcode_df["la_code"].fillna(" ").apply(lambda code: country_dict[code[0]])
+        postcode_df["la_code"]
+        .fillna(" ")
+        .apply(
+            lambda code: country_dict[code[0]]
+            if code[0] in country_dict.keys()
+            else "other"
+        )
     )
 
     return postcode_df

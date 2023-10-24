@@ -145,6 +145,9 @@ def proportions_bar_chart(
                 scale=alt.Scale(domain=[0, 0.5]) if expand_y is True else alt.Scale(),
             ),
         )
+        .configure_bar(
+            color="#0000ff",
+        )
         .properties(
             width=500,
             height=300,
