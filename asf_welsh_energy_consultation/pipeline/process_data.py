@@ -229,13 +229,38 @@ def get_new_builds_hp_cumsums():
     return new_hps_cumsums
 
 
+def identify_mcs_with_multiple_epc():
+    """
+    Creates a list of UPRNs that appear more than once in the MCS-EPC `most_relevant` dataset. UPRNs that appear more than once
+    indicate a single MCS installation joined to multiple EPC records.
+
+    Returns:
+        List of duplicate UPRNs.
+    """
+    mcs_epc_most_relevant = get_data.get_mcs_and_joined_data(
+        epc_version="most_relevant"
+    )
+    mcs_epc_most_relevant["count"] = 1
+    uprn_count = mcs_epc_most_relevant.groupby(["UPRN"])["count"].sum().reset_index()
+    duplicate_uprns = uprn_count[uprn_count["count"] > 1]["UPRN"].to_list()
+
+    return duplicate_uprns
+
+
 def mcs_epc_first_records():
-    """Get first records from fully joined MCS-EPC dataset.
+    """Get first records from fully joined MCS-EPC dataset. Note: all rows with UPRNs associated with multiple MCS installations
+    in the dataset are removed to avoid double counting.
 
     Returns:
         pd.DataFrame: MCS records joined with first EPC.
     """
     mcs_epc = get_data.get_mcs_epc_domestic()
+    duplicate_uprns = identify_mcs_with_multiple_epc()
+    logger.warning(
+        f"{len(duplicate_uprns)} duplicate UPRNs identified. Removing all rows with a duplicate UPRN from MCS-EPC fully joined dataset."
+    )
+    mcs_epc = mcs_epc.loc[~mcs_epc.UPRN.isin(duplicate_uprns)]
+
     regions = get_data.get_countries()
 
     mcs_epc = mcs_epc.merge(regions, on="postcode", how="left")
