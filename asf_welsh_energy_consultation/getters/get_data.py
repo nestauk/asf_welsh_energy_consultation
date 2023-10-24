@@ -98,31 +98,29 @@ tenure_path = f"inputs/{arguments.supp_data}/tenure.csv"
 LOCAL_DATA_DIR = arguments.local_data_dir
 
 
-def get_mcs_and_joined_data():
+def get_mcs_and_joined_data(epc_version):
     """
-    Get cleaned MCS data, and cleaned MCS data fully joined with EPC dataset up to date specified in args.
+    Get cleaned MCS data, and cleaned MCS data fully joined with EPC dataset, and cleaned MCS data joined with most recent EPC before HP
+    installation or earliest after installation, up to date specified in args.
 
     Returns:
-        MCS dataset and MCS dataset fully joined with EPC dataset
+        pd.DataFrame of specified MCS or MCS-EPC joined dataset.
     """
     mcs_date = arguments.mcs_batch
 
     # Get latest MCS data or batch specified in args
     if mcs_date == "newest":
-        mcs_data = get_mcs_installations(epc_version="none")
-        mcs_epc_full_data = get_mcs_installations(epc_version="full")
+        mcs_data = get_mcs_installations(epc_version=epc_version)
     else:
         mcs_data = get_processed_installations_data_by_batch(
-            batch_date=mcs_date, epc_version="none"
+            batch_date=mcs_date, epc_version=epc_version
         )
-        mcs_epc_full_data = get_processed_installations_data_by_batch(
-            batch_date=mcs_date, epc_version="full"
-        )
-    return mcs_data, mcs_epc_full_data
+    return mcs_data
 
 
 # Get MCS data from S3
-mcs_installations_data, mcs_installations_epc_full_data = get_mcs_and_joined_data()
+mcs_installations_data = get_mcs_and_joined_data(epc_version="none")
+mcs_installations_epc_full_data = get_mcs_and_joined_data(epc_version="full")
 
 
 def get_countries():
