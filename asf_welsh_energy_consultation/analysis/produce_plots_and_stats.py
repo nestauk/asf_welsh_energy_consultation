@@ -323,6 +323,7 @@ if __name__ == "__main__":
         "Deiliadaeth",
         "Canran yr eiddo",
         filename="hp_tenure_welsh",
+        label_rotation=45,
         x_type="tenure",
         expand_y=True,
         language="welsh",
