@@ -1,2 +1,10 @@
 plots:
   time_series_min_default: "2015-01-01"
+directories:
+  supplementary_data_dir: "inputs/data"
+supplementary_data:
+  postcode_dir: "postcodes"
+  off_gas_data: "off-gas-live-postcodes-2022.xlsx"
+  postcode_to_oa_data: "postcode_to_output_area.csv"
+  rurality_data: "rurality.ods"
+  tenure_data: "tenure.csv"
