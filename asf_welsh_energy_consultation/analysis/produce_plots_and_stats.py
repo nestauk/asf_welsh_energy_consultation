@@ -35,6 +35,20 @@ if not os.path.isdir(output_folder):
 if __name__ == "__main__":
     # ======================================================
     # MCS installations, by off-gas status
+    total_cumulative_installations = process_data.get_total_cumsums()
+
+    total_cumulative_installations_chart = time_series_comparison(
+        data=total_cumulative_installations,
+        title="Cumulative MCS installations over time",
+        y_var="cumsum:Q",
+        y_title="Number of heat pump installations",
+        color_var="colour:N",
+        filename="total_cumulative_installations",
+        output_dir=output_folder,
+    )
+
+    # ======================================================
+    # MCS installations, by off-gas status
 
     installations_by_gas_status = process_data.cumsums_by_variable(
         "off_gas", "Gas status"
