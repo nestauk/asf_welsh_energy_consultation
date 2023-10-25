@@ -22,7 +22,7 @@ The remainder of the charts in the response can be produced from code in the rep
   directory where your local copy of the EPC data is/will be saved by replacing `<YOUR_LOCAL_DIR>` with the path to your "ASF_data" directory or equivalent.
   If you don't have a local directory for ASF core data, you can create a folder called "ASF_data" in your home directory. You can specify which
   batch of EPC data to download and MCS data to load from S3 by passing the `--epc_batch` and `--mcs_batch` arguments, both
-  default to downloading/loading the newest data from S3, respectively. Run `python asf_welsh_energy_consultation/analysis/produce_plots.py -h` for more info.
+  default to downloading/loading the newest data from S3, respectively. Run `python asf_welsh_energy_consultation/analysis/produce_plots_and_stats.py -h` for more info.
 
 The script should generate the following six plots which will be saved in your local repo in `outputs/figures`:
 
@@ -60,8 +60,9 @@ asf_welsh_energy_consultation/
 │  ├─ process_data.py - functions to process and enhance raw data
 │  ├─ unused_processing.py - unused processing functions from August '22
 inputs/
-├─ data_[YYYYMM]/ - data files, a mixture of csv, xlsx and ods
-│  ├─ postcodes/ - individual subfolders for each postcode region
+├─ data/
+│  ├─ data_[YYYYMM]/ - data files, a mixture of csv, xlsx and ods
+│  │  ├─ postcodes/ - individual subfolders for each postcode region
 outputs/
 ├─ figures/ - where charts are saved
 ```
