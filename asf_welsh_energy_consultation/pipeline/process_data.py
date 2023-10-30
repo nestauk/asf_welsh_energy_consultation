@@ -4,9 +4,11 @@ Functions to process and augment data.
 """
 
 import pandas as pd
+import logging
 
-from asf_welsh_energy_consultation.getters.get_data import *
+from asf_welsh_energy_consultation.getters import get_data
 
+logger = logging.getLogger(__name__)
 
 # PROCESSING MCS
 
@@ -17,10 +19,10 @@ def get_enhanced_mcs():
     Returns:
         pd.DataFrame: Dataset as described above.
     """
-    mcs = get_mcs_domestic()
-    og = get_offgas()
-    countries = get_countries()
-    rural = get_rurality()
+    mcs = get_data.get_mcs_domestic()
+    og = get_data.get_offgas()
+    countries = get_data.get_countries()
+    rural = get_data.get_rurality()
 
     # join with off-gas data
     mcs = mcs.merge(og, on="postcode", how="left")
@@ -28,15 +30,22 @@ def get_enhanced_mcs():
 
     # join with regions in order to filter to Wales
     mcs = mcs.merge(countries, on="postcode", how="left")
+    if mcs.country.isna().sum() > 0:
+        logger.warning(
+            f"{mcs.country.isna().sum()} MCS installation records have no country match. "
+            f"Potential loss of data when filtering for Wales."
+        )
     mcs = mcs.loc[mcs["country"] == "Wales"].reset_index(drop=True)
-    # 1203 records with no match - 273 are Northern Ireland which leaves 918
+    # There will be records with no match
     # Some will be new postcodes (new build developments)
     # and some may be expired postcodes
-    # In future, implement new solution that uses outward codes
 
     # join with rurality data
     mcs = mcs.merge(rural, on="postcode", how="left")
-    # only 13 postcodes lost in this merge
+    if mcs.rurality_10_code.isna().sum() > 0:
+        logger.warning(
+            f"Loss of data: {mcs.rurality_10_code.isna().sum()} Welsh MCS installation records have no rurality code match."
+        )
 
     # add custom rurality column (rurality "type 7": all different types of urban mapped to Urban)
     mcs["rurality_7"] = mcs["rurality_10_label"].replace(
@@ -102,17 +111,41 @@ def cumsums_by_variable(variable, new_var_name, data=enhanced_mcs):
 
 # PROCESSING EPC
 
-wales_epc = get_wales_epc()
+wales_epc = get_data.get_wales_processed_epc()
 
 
-def get_wales_epc_new():
+def correct_new_dwelling_labels():
+    """
+    For each unique property in the pandas DataFrame that has more than one record where `TRANSACTION_TYPE == "new dwelling"`,
+    replace "new dwelling" with "unknown" for each row except the row with the earliest date.
+
+    Returns:
+        pd.DataFrame: Wales EPC certificates
+    """
+    wales_epc["rank"] = wales_epc.groupby("UPRN")["INSPECTION_DATE"].rank(
+        "dense", na_option="bottom"
+    )
+    df = wales_epc.copy()
+    df["TRANSACTION_TYPE"] = df.apply(
+        lambda row: "unknown"
+        if row["TRANSACTION_TYPE"] == "new dwelling" and row["rank"] > 1
+        else row["TRANSACTION_TYPE"],
+        axis=1,
+    )
+
+    return df
+
+
+def get_wales_new_builds_epc():
     """Get first EPC certificates for any property labelled as "new dwelling".
 
     Returns:
         pd.DataFrame: New build EPC certificates.
     """
+    wales_epc_new = correct_new_dwelling_labels()
+
     wales_epc_new = (
-        wales_epc.loc[wales_epc["TRANSACTION_TYPE"] == "new dwelling"][
+        wales_epc_new.loc[wales_epc_new["TRANSACTION_TYPE"] == "new dwelling"][
             ["UPRN", "INSPECTION_DATE", "HP_INSTALLED"]
         ]
         .dropna(subset="INSPECTION_DATE")
@@ -127,15 +160,21 @@ def get_wales_epc_new():
     return wales_epc_new
 
 
-def get_new_hp_counts():
+def get_new_builds_hp_counts():
     """Get counts of new builds with HPs for each year.
 
     Returns:
         pd.DataFrame: New build HP counts.
     """
-    wales_epc_new = get_wales_epc_new()
-    # 2023 not yet complete so drop any post-2022 data
-    wales_epc_new = wales_epc_new.loc[wales_epc_new["INSPECTION_DATE"] < "2023-01-01"]
+    wales_epc_new = get_wales_new_builds_epc()
+    # Requires full year of data so remove most recent year if it doesn't have 12 months of data
+    wales_epc_new["INSPECTION_DATE"] = pd.to_datetime(wales_epc_new["INSPECTION_DATE"])
+    max_date = wales_epc_new["INSPECTION_DATE"].max()
+    max_year = max_date.year
+    if max_date != pd.to_datetime(f"{max_year}-12-31"):
+        wales_epc_new = wales_epc_new.loc[
+            wales_epc_new["INSPECTION_DATE"] < f"{max_year}-01-01"
+        ]
 
     new_hp_counts = (
         wales_epc_new.groupby(["year", "HP_INSTALLED"])
@@ -163,13 +202,13 @@ def get_new_hp_counts():
     return new_hp_counts
 
 
-def get_new_hp_cumsums():
+def get_new_builds_hp_cumsums():
     """Get cumulative total of new build HPs.
 
     Returns:
         pd.DataFrame: New build HPs cumulative totals.
     """
-    wales_epc_new = get_wales_epc_new()
+    wales_epc_new = get_wales_new_builds_epc()
 
     new_hps = wales_epc_new.loc[wales_epc_new["HP_INSTALLED"]].reset_index(drop=True)
     new_hps_sums = (
@@ -190,16 +229,46 @@ def get_new_hp_cumsums():
     return new_hps_cumsums
 
 
+def identify_mcs_with_multiple_epc():
+    """
+    Creates a list of UPRNs that appear more than once in the MCS-EPC `most_relevant` dataset. UPRNs that appear more than once
+    indicate a single MCS installation joined to multiple EPC records.
+
+    Returns:
+        List of duplicate UPRNs.
+    """
+    mcs_epc_most_relevant = get_data.get_mcs_and_joined_data(
+        epc_version="most_relevant"
+    )
+    mcs_epc_most_relevant["count"] = 1
+    uprn_count = mcs_epc_most_relevant.groupby(["UPRN"])["count"].sum().reset_index()
+    duplicate_uprns = uprn_count[uprn_count["count"] > 1]["UPRN"].to_list()
+
+    return duplicate_uprns
+
+
 def mcs_epc_first_records():
-    """Get first records from fully joined MCS-EPC dataset.
+    """Get first records from fully joined MCS-EPC dataset. Note: all rows with UPRNs associated with multiple MCS installations
+    in the dataset are removed to avoid double counting.
 
     Returns:
         pd.DataFrame: MCS records joined with first EPC.
     """
-    mcs_epc = get_mcs_epc_domestic()
-    regions = get_countries()
+    mcs_epc = get_data.get_mcs_epc_domestic()
+    duplicate_uprns = identify_mcs_with_multiple_epc()
+    logger.warning(
+        f"{len(duplicate_uprns)} duplicate UPRNs identified. Removing all rows with a duplicate UPRN from MCS-EPC fully joined dataset."
+    )
+    mcs_epc = mcs_epc.loc[~mcs_epc.UPRN.isin(duplicate_uprns)]
+
+    regions = get_data.get_countries()
 
     mcs_epc = mcs_epc.merge(regions, on="postcode", how="left")
+    if mcs_epc.country.isna().sum() > 0:
+        logger.warning(
+            f"{mcs_epc.country.isna().sum()} joined MCS-EPC records have no country match. "
+            f"Potential loss of data when filtering for Wales."
+        )
     mcs_epc = mcs_epc.loc[mcs_epc["country"] == "Wales"].reset_index(drop=True)
 
     first_records = (
@@ -256,3 +325,62 @@ def get_mcs_retrofits():
     mcs_retrofits = enhanced_mcs.loc[~enhanced_mcs.index.isin(hp_when_built_indices)]
 
     return mcs_retrofits
+
+
+def generate_age_data(wales_df):
+    """Generate table of proportion of properties in each age band.
+    Also includes average energy efficiency for each age band.
+
+    Args:
+        wales_df (pd.DataFrame): EPC data with "CONSTRUCTION_AGE_BAND" column.
+
+    Returns:
+        pd.DataFrame: Age band proportions and efficiencies.
+    """
+    age_props = (
+        wales_df.loc[
+            wales_df.CONSTRUCTION_AGE_BAND != "unknown"
+        ].CONSTRUCTION_AGE_BAND.value_counts(normalize=True)
+        * 100
+    )
+    age_props = age_props.reset_index()
+    age_props = age_props.rename(
+        columns={
+            "index": "CONSTRUCTION_AGE_BAND",
+            "CONSTRUCTION_AGE_BAND": "percentage",
+        }
+    )
+    ages_efficiencies = (
+        wales_df.groupby("CONSTRUCTION_AGE_BAND")["CURRENT_ENERGY_EFFICIENCY"]
+        .mean()
+        .reset_index()
+    )
+    age_data = age_props.merge(ages_efficiencies, on="CONSTRUCTION_AGE_BAND")
+    age_data["CONSTRUCTION_AGE_BAND"] = age_data["CONSTRUCTION_AGE_BAND"].replace(
+        {"England and Wales: before 1900": "Pre-1900"}
+    )
+    age_data = (
+        age_data.set_index("CONSTRUCTION_AGE_BAND")
+        .loc[
+            [
+                "Pre-1900",
+                "1900-1929",
+                "1930-1949",
+                "1950-1966",
+                "1965-1975",
+                "1976-1983",
+                "1983-1991",
+                "1991-1998",
+                "1996-2002",
+                "2003-2007",
+                "2007 onwards",
+            ]
+        ]
+        .reset_index()
+    )
+    age_data["CURRENT_ENERGY_EFFICIENCY"] = age_data["CURRENT_ENERGY_EFFICIENCY"].round(
+        1
+    )
+    age_data["cumul_prop"] = age_data["percentage"].cumsum()
+
+    return age_data
