@@ -91,21 +91,8 @@ def get_args():
 
 
 arguments = get_args()
-
-input_data_path = f"inputs/{arguments.supp_data}/"
-
-wales_epc_path = "wales_epc.csv"
-
-postcode_path = f"inputs/{arguments.supp_data}/postcodes"
-regions_path = f"inputs/{arguments.supp_data}/regions.csv"
-off_gas_path = f"inputs/{arguments.supp_data}/off-gas-live-postcodes-2022.xlsx"
-oa_path = f"inputs/{arguments.supp_data}/postcode_to_output_area.csv"
-rurality_path = f"inputs/{arguments.supp_data}/rurality.ods"
-tenure_path = f"inputs/{arguments.supp_data}/tenure.csv"
-
 LOCAL_DATA_DIR = arguments.local_data_dir
 input_data_path = os.path.join(supp_data_dir, arguments.supp_data)
-
 wales_epc_path = "wales_epc.csv"
 
 
