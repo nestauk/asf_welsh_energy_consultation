@@ -134,17 +134,31 @@ def get_countries():
     )
     postcode_folder = PROJECT_DIR / postcode_path
     files = os.listdir(postcode_folder)
-    postcode_df = pd.concat(
-        # Only need postcode and LA code cols
-        (
-            pd.read_csv(os.path.join(postcode_folder, file), header=0)[
-                ["pcd", "osward"]
-            ]
-            for file in files
-        ),
-        ignore_index=True,
-    )
-    postcode_df = postcode_df.rename(columns={"pcd": "postcode", "osward": "la_code"})
+    try:
+        postcode_df = pd.concat(
+            # Only need postcode and LA code cols
+            (
+                pd.read_csv(os.path.join(postcode_folder, file), header=0)[
+                    ["pcd", "osward"]
+                ]
+                for file in files
+            ),
+            ignore_index=True,
+        )
+        postcode_df = postcode_df.rename(
+            columns={"pcd": "postcode", "osward": "la_code"}
+        )
+
+    except KeyError:  # Older data has no col names so use col numbers
+        postcode_df = pd.concat(
+            # Only need postcode and LA code cols
+            (
+                pd.read_csv(postcode_folder / file, header=None)[[0, 8]]
+                for file in files
+            ),
+            ignore_index=True,
+        )
+        postcode_df = postcode_df.rename(columns={0: "postcode", 8: "la_code"})
 
     postcode_df["postcode"] = postcode_df["postcode"].str.replace(" ", "")
 
