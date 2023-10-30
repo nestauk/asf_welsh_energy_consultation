@@ -71,6 +71,17 @@ outputs/
 
 Versions/batches of data used for previous analysis are listed below.
 
+October 2023 analysis:
+
+- EPC: 2023_Q2_complete (preprocessed, and preprocessed and deduplicated)
+- mcs_installations_231009.csv
+- mcs_installations_epc_full_231009.csv
+- off-gas-live-postcodes-2022.xlsx - check [here](https://www.xoserve.com/a-to-z/) for updates
+- postcodes - [ONS Postcode Directory (August 2023)](https://geoportal.statistics.gov.uk/datasets/ons-postcode-directory-august-2023/about)
+- postcode_to_output_area.csv - [postcode to OA, LSOA, MSAO, LAD lookup (May 2022)](https://geoportal.statistics.gov.uk/datasets/e7824b1475604212a2325cd373946235)
+- rurality.ods - 2011 Rural Urban Classification for small area geographies, see [here](https://www.ons.gov.uk/methodology/geography/geographicalproducts/ruralurbanclassifications)
+- tenure.csv - [Accommodation type by type of central heating in household by tenure (28 March 2023)](https://www.ons.gov.uk/datasets/RM003/editions/2021/versions/1)
+
 April 2023 analysis:
 
 - EPC: 2022_Q4_complete (preprocessed)
@@ -78,6 +89,7 @@ April 2023 analysis:
 - mcs_installations_epc_full_230315.csv
 - off-gas-live-postcodes-2022.xlsx - check [here](https://www.xoserve.com/a-to-z/) for updates
 - rurality.ods - 2011 Rural Urban Classification for small area geographies, see [here](https://www.ons.gov.uk/methodology/geography/geographicalproducts/ruralurbanclassifications)
+- postcodes ; postcode_to_output_area.csv ; tenure.csv - ONS data with unknown source date
 
 ## Contributor guidelines
 
