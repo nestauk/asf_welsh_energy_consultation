@@ -107,6 +107,7 @@ def proportions_bar_chart(
     x_label,
     y_label,
     filename,
+    label_rotation=0,
     expand_y=False,
     x_type="good",
     language="english",
@@ -120,6 +121,7 @@ def proportions_bar_chart(
         x_label (str): x axis label.
         y_label (str): y axis label.
         filename (str): Filename.
+        label_rotation (int): Rotation of x-axis labels. Defaults to False.
         expand_y (bool, optional): Whether to extend the y axis beyond altair's default. Defaults to False.
         x_type (str, optional): Type of x variable (to control formatting).
             Can be "good" (insulation quality), "tenure", or otherwise assumed to be A-G energy efficiencies.
@@ -145,7 +147,12 @@ def proportions_bar_chart(
         .transform_calculate(PercentOfTotal="datum.count / datum.Total")
         .mark_bar()
         .encode(
-            x=alt.X("index", sort=order, title=x_label, axis=alt.Axis(labelAngle=0)),
+            x=alt.X(
+                "index",
+                sort=order,
+                title=x_label,
+                axis=alt.Axis(labelAngle=label_rotation),
+            ),
             y=alt.Y(
                 shorthand="PercentOfTotal:Q",
                 axis=alt.Axis(format=".0%"),

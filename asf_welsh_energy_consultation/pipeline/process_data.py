@@ -149,9 +149,9 @@ def correct_new_dwelling_labels():
     Returns:
         pd.DataFrame: Wales EPC certificates
     """
-    wales_epc["rank"] = wales_epc.groupby("BUILDING_REFERENCE_NUMBER")[
-        "INSPECTION_DATE"
-    ].rank("dense")
+    wales_epc["rank"] = wales_epc.groupby("UPRN")["INSPECTION_DATE"].rank(
+        "dense", na_option="bottom"
+    )
     df = wales_epc.copy()
     df["TRANSACTION_TYPE"] = df.apply(
         lambda row: "unknown"

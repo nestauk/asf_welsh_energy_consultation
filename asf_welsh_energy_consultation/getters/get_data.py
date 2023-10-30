@@ -4,6 +4,7 @@ Data getters.
 """
 
 from asf_welsh_energy_consultation import PROJECT_DIR
+from asf_welsh_energy_consultation import config_file
 
 from asf_core_data import load_preprocessed_epc_data, get_mcs_installations
 from asf_core_data.getters.mcs_getters.get_mcs_installations import (
@@ -19,6 +20,8 @@ import numpy as np
 import os
 
 from argparse import ArgumentParser
+
+supp_data_dir = config_file["directories"]["supplementary_data_dir"]
 
 
 def create_argparser():
@@ -76,8 +79,13 @@ def get_args():
     args = parser.parse_args()
 
     if args.supp_data == "newest":
-        subdirs = [subdir for subdir in os.listdir("inputs")]
+        subdirs = [
+            subdir for subdir in os.listdir(os.path.join(PROJECT_DIR, supp_data_dir))
+        ]
         args.supp_data = max(subdirs)
+        logger.info(
+            f"Using supplementary folder from the following directory: {os.path.join(PROJECT_DIR, supp_data_dir, max(subdirs))}"
+        )
 
     return args
 
@@ -96,6 +104,9 @@ rurality_path = f"inputs/{arguments.supp_data}/rurality.ods"
 tenure_path = f"inputs/{arguments.supp_data}/tenure.csv"
 
 LOCAL_DATA_DIR = arguments.local_data_dir
+input_data_path = os.path.join(supp_data_dir, arguments.supp_data)
+
+wales_epc_path = "wales_epc.csv"
 
 
 def get_mcs_and_joined_data(epc_version):
@@ -130,19 +141,36 @@ def get_countries():
         Dataframe: Postcode geographic data.
     """
     # Read postcode data
+    postcode_path = os.path.join(
+        input_data_path, config_file["supplementary_data"]["postcode_dir"]
+    )
     postcode_folder = PROJECT_DIR / postcode_path
     files = os.listdir(postcode_folder)
-    postcode_df = pd.concat(
-        # Only need postcode and LA code cols
-        (
-            pd.read_csv(os.path.join(postcode_folder, file), header=0)[
-                ["pcd", "osward"]
-            ]
-            for file in files
-        ),
-        ignore_index=True,
-    )
-    postcode_df = postcode_df.rename(columns={"pcd": "postcode", "osward": "la_code"})
+    try:
+        postcode_df = pd.concat(
+            # Only need postcode and LA code cols
+            (
+                pd.read_csv(os.path.join(postcode_folder, file), header=0)[
+                    ["pcd", "osward"]
+                ]
+                for file in files
+            ),
+            ignore_index=True,
+        )
+        postcode_df = postcode_df.rename(
+            columns={"pcd": "postcode", "osward": "la_code"}
+        )
+
+    except KeyError:  # Older data has no col names so use col numbers
+        postcode_df = pd.concat(
+            # Only need postcode and LA code cols
+            (
+                pd.read_csv(postcode_folder / file, header=None)[[0, 8]]
+                for file in files
+            ),
+            ignore_index=True,
+        )
+        postcode_df = postcode_df.rename(columns={0: "postcode", 8: "la_code"})
 
     postcode_df["postcode"] = postcode_df["postcode"].str.replace(" ", "")
 
@@ -198,6 +226,9 @@ def get_offgas():
     Returns:
         pd.DataFrame: Dataframe containing off-gas postcodes.
     """
+    off_gas_path = os.path.join(
+        input_data_path, config_file["supplementary_data"]["off_gas_data"]
+    )
     og = pd.read_excel(
         PROJECT_DIR / off_gas_path,
         sheet_name="Off Gas Live PostCodes 22",
@@ -218,6 +249,9 @@ def get_rurality():
     Returns:
         pd.DataFrame: Dataset with postcodes and ruralities.
     """
+    oa_path = os.path.join(
+        input_data_path, config_file["supplementary_data"]["postcode_to_oa_data"]
+    )
     oa = pd.read_csv(
         PROJECT_DIR / oa_path, encoding="latin-1"
     )  # latin-1 as otherwise invalid byte
@@ -227,6 +261,9 @@ def get_rurality():
     )
     oa["postcode"] = oa["postcode"].str.replace(" ", "")
 
+    rurality_path = os.path.join(
+        input_data_path, config_file["supplementary_data"]["rurality_data"]
+    )
     rural = pd.read_excel(
         PROJECT_DIR / rurality_path, engine="odf", sheet_name="OA11", skiprows=2
     )
@@ -344,6 +381,9 @@ def get_electric_tenure():
     Returns:
         pd.DataFrame: Dataset of tenure counts for properties on electric heating in Wales.
     """
+    tenure_path = os.path.join(
+        input_data_path, config_file["supplementary_data"]["tenure_data"]
+    )
     data = pd.read_csv(PROJECT_DIR / tenure_path)
 
     data = data[
@@ -440,7 +480,7 @@ def load_wales_df(from_csv=True):
         if not os.path.isdir(input_data_path):
             os.makedirs(input_data_path)
 
-        wales_epc.to_csv(input_data_path + wales_epc_path)
+        wales_epc.to_csv(os.path.join(input_data_path, wales_epc_path))
 
     return wales_epc
 

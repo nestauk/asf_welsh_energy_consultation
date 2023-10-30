@@ -17,12 +17,15 @@ The remainder of the charts in the response can be produced from code in the rep
   - Configure `pre-commit`
   - Install packages listed in `requirements.txt`
 - Activate conda environment: `conda activate asf_welsh_energy_consultation`
-- Run `make inputs-pull` to pull the zipped static data from S3 and put it in `/inputs`
+- Run `make inputs-pull` to pull the zipped supplementary data from S3 and put it in `/inputs/data`. There will be one folder per historical analysis
+  containing the supplementary data files as listed in the `Historical analysis` section below.
 - Run `python asf_welsh_energy_consultation/analysis/produce_plots_and_stats.py --local_data_dir <YOUR_LOCAL_DIR>`. You need to specify the path to the local
   directory where your local copy of the EPC data is/will be saved by replacing `<YOUR_LOCAL_DIR>` with the path to your "ASF_data" directory or equivalent.
-  If you don't have a local directory for ASF core data, you can create a folder called "ASF_data" in your home directory. You can specify which
-  batch of EPC data to download and MCS data to load from S3 by passing the `--epc_batch` and `--mcs_batch` arguments, both
-  default to downloading/loading the newest data from S3, respectively. Run `python asf_welsh_energy_consultation/analysis/produce_plots.py -h` for more info.
+  If you don't have a local directory for ASF core data, you can create a folder called "ASF_data" in your home directory.
+  - You can specify which batch of EPC data to download and MCS data to load from S3 by passing the `--epc_batch` and `--mcs_batch` arguments, both
+    default to downloading/loading the newest data from S3, respectively.
+  - You can specify which supplementary data folder to use by passing the `--supp_data` argument. It defaults to using the latest supplementary data folder.
+  - Run `python asf_welsh_energy_consultation/analysis/produce_plots_and_stats.py -h` for more info.
 
 The script should generate the following six plots which will be saved in your local repo in `outputs/figures`:
 
@@ -60,8 +63,9 @@ asf_welsh_energy_consultation/
 │  ├─ process_data.py - functions to process and enhance raw data
 │  ├─ unused_processing.py - unused processing functions from August '22
 inputs/
-├─ data_[YYYYMM]/ - data files, a mixture of csv, xlsx and ods
-│  ├─ postcodes/ - individual subfolders for each postcode region
+├─ data/
+│  ├─ data_[YYYYMM]/ - data files, a mixture of csv, xlsx and ods
+│  │  ├─ postcodes/ - individual subfolders for each postcode region
 outputs/
 ├─ figures/ - where charts are saved
 ```
@@ -70,13 +74,25 @@ outputs/
 
 Versions/batches of data used for previous analysis are listed below.
 
-April 2023 analysis:
+October 2023 analysis (`/inputs/data/data_202310`):
+
+- EPC: 2023_Q2_complete (preprocessed, and preprocessed and deduplicated)
+- mcs_installations_231009.csv
+- mcs_installations_epc_full_231009.csv
+- off-gas-live-postcodes-2022.xlsx - check [here](https://www.xoserve.com/a-to-z/) for updates
+- postcodes - [ONS Postcode Directory (August 2023)](https://geoportal.statistics.gov.uk/datasets/ons-postcode-directory-august-2023/about)
+- postcode_to_output_area.csv - [postcode to OA, LSOA, MSAO, LAD lookup (May 2022)](https://geoportal.statistics.gov.uk/datasets/e7824b1475604212a2325cd373946235)
+- rurality.ods - 2011 Rural Urban Classification for small area geographies, see [here](https://www.ons.gov.uk/methodology/geography/geographicalproducts/ruralurbanclassifications)
+- tenure.csv - [Accommodation type by type of central heating in household by tenure (28 March 2023)](https://www.ons.gov.uk/datasets/RM003/editions/2021/versions/1)
+
+April 2023 analysis (`/inputs/data/data_202304`):
 
 - EPC: 2022_Q4_complete (preprocessed)
 - mcs_installations_230315.csv
 - mcs_installations_epc_full_230315.csv
 - off-gas-live-postcodes-2022.xlsx - check [here](https://www.xoserve.com/a-to-z/) for updates
 - rurality.ods - 2011 Rural Urban Classification for small area geographies, see [here](https://www.ons.gov.uk/methodology/geography/geographicalproducts/ruralurbanclassifications)
+- postcodes ; postcode_to_output_area.csv ; tenure.csv - ONS data with unknown source date
 
 ## Contributor guidelines
 
