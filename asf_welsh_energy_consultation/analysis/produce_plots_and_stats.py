@@ -43,7 +43,7 @@ if __name__ == "__main__":
     installations_by_gas_status_chart = time_series_comparison(
         data=installations_by_gas_status,
         title=[
-            "Fig. 4: Cumulative number of MCS certified heat pump installations in Welsh homes",
+            "Cumulative number of MCS certified heat pump installations in Welsh homes",
             "located in off- and on-gas postcodes",
         ],
         y_var="Number of heat pumps:Q",
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     electric_tenure_chart = (
         alt.Chart(
             electric_tenure,
-            title="Fig. 2: Properties in Wales with only electric heating, split by tenure (N = "
+            title="Properties in Wales with only electric heating, split by tenure (N = "
             + "{:,}".format(N)
             + ")",
         )
@@ -238,7 +238,7 @@ if __name__ == "__main__":
     proportions_bar_chart(
         wales_hp,
         "TENURE",
-        "Fig. 3: Tenure of Welsh properties with heat pumps",
+        "Tenure of Welsh properties with heat pumps",
         "Tenure",
         "Percentage of properties",
         filename="hp_tenure",
@@ -255,7 +255,7 @@ if __name__ == "__main__":
     proportions_bar_chart(
         wales_df.loc[wales_df.CURRENT_ENERGY_RATING != "unknown"],
         "CURRENT_ENERGY_RATING",
-        "Fig. 5: EPC ratings of all Welsh properties",
+        "EPC ratings of all Welsh properties",
         "Energy efficiency rating",
         "Percentage of properties",
         filename="epc_all",
@@ -267,7 +267,7 @@ if __name__ == "__main__":
         wales_hp.loc[wales_hp.TENURE.isin(["Owner-occupied", "Privately rented"])],
         "CURRENT_ENERGY_RATING",
         [
-            "Fig. 6: EPC ratings of owner-occupied and privately rented",
+            "EPC ratings of owner-occupied and privately rented",
             "Welsh properties with heat pumps",
         ],
         "Energy efficiency rating",
@@ -284,7 +284,7 @@ if __name__ == "__main__":
         ],
         "CURRENT_ENERGY_RATING",
         [
-            "Fig. 7: EPC ratings of owner-occupied and privately rented",
+            "EPC ratings of owner-occupied and privately rented",
             "Welsh properties with heat pumps, built pre-2007",
         ],
         "Energy efficiency rating",
@@ -295,7 +295,7 @@ if __name__ == "__main__":
 
     age_data = process_data.generate_age_data(wales_df)
     age_prop_chart(
-        age_data, "Fig. 9: Construction age bands and energy efficiencies", "age_prop"
+        age_data, "Construction age bands and energy efficiencies", "age_prop"
     )
 
     ## Welsh plots
@@ -319,7 +319,7 @@ if __name__ == "__main__":
     proportions_bar_chart(
         wales_hp,
         "TENURE",
-        "Ffig. 4: Deiliadaeth eiddo â phympiau gwres yng Nghymru",
+        "Deiliadaeth eiddo â phympiau gwres yng Nghymru",
         "Deiliadaeth",
         "Canran yr eiddo",
         filename="hp_tenure_welsh",
@@ -333,7 +333,7 @@ if __name__ == "__main__":
     proportions_bar_chart(
         wales_df.loc[wales_df.CURRENT_ENERGY_RATING != "unknown"],
         "CURRENT_ENERGY_RATING",
-        "Ffig. 6: Sgoriau EPC holl eiddo Cymru",
+        "Sgoriau EPC holl eiddo Cymru",
         "Sgôr effeithlonrwydd ynni",
         "Canran yr eiddo",
         filename="epc_all_welsh",
@@ -346,7 +346,7 @@ if __name__ == "__main__":
         wales_hp.loc[wales_hp.TENURE.isin(["Perchen-feddiannaeth", "Rhentu preifat"])],
         "CURRENT_ENERGY_RATING",
         [
-            "Ffig. 7: Sgoriau EPC eiddo perchen-feddiannaeth a",
+            "Sgoriau EPC eiddo perchen-feddiannaeth a",
             "rhentu preifat Cymru sydd â phympiau gwres",
         ],
         "Sgôr effeithlonrwydd ynni",
@@ -364,7 +364,7 @@ if __name__ == "__main__":
         ],
         "CURRENT_ENERGY_RATING",
         [
-            "Ffig. 8: Sgoriau EPC eiddo perchen-feddiannaeth a rhentu prifat",
+            "Sgoriau EPC eiddo perchen-feddiannaeth a rhentu prifat",
             "Cymru sydd â phympiau gwres, a adeiladwyd cyn 2007",
         ],
         "Sgôr effeithlonrwydd ynni",
@@ -377,7 +377,7 @@ if __name__ == "__main__":
     # Ages and EPC ratings
     age_prop_chart(
         age_data,
-        "Ffig. 9: Bandiau oedran adeiladu ac effeithlonrwydd ynni",
+        "Bandiau oedran adeiladu ac effeithlonrwydd ynni",
         "age_prop_welsh",
         language="welsh",
     )
