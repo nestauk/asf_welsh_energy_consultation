@@ -8,3 +8,4 @@ supplementary_data:
   postcode_to_oa_data: "postcode_to_output_area.csv"
   rurality_data: "rurality.ods"
   tenure_data: "tenure.csv"
+  dwelling_data: "dwellings_2021.xlsx"
