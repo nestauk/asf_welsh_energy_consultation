@@ -86,7 +86,7 @@ def get_total_cumsums():
         cumulative_total.commission_date >= "2015-01-01"
     ].reset_index(drop=True)
     cumulative_total = cumulative_total.rename(columns={"commission_date": "date"})
-    cumulative_total["colour"] = 1
+    cumulative_total["colour"] = 1  # add single colour category for plotting
 
     return cumulative_total
 
