@@ -113,8 +113,7 @@ if __name__ == "__main__":
         alt.Chart(
             new_build_hp_cumulative,
             title=[
-                "Cumulative total of EPC registrations for new builds",
-                "with heat pumps in Wales since 2008",
+                "Cumulative heat pump installations in new builds with EPC registrations in Wales since 2008",
             ],
         )
         .mark_line()
@@ -122,6 +121,7 @@ if __name__ == "__main__":
             x="Date",
             y="Number of EPCs",
         )
+        .configure_line(color="#0000ff")
         .properties(width=600, height=300)
     )
 
@@ -153,6 +153,7 @@ if __name__ == "__main__":
             ),
             y="Number of heat pumps",
         )
+        .configure_line(color="#0000ff")
         .properties(width=600, height=300)
     )
 
@@ -178,6 +179,7 @@ if __name__ == "__main__":
             y=alt.Y("n", title="Number of properties"),
         )
         .configure(lineBreak="\n")
+        .configure_bar(color="#0000ff")
         .properties(width=600, height=300)
     ).configure_title(fontSize=20)
 
@@ -238,7 +240,7 @@ if __name__ == "__main__":
     proportions_bar_chart(
         wales_hp,
         "TENURE",
-        "Tenure of Welsh properties with heat pumps",
+        "Tenure of Welsh EPC-registered properties with heat pumps",
         "Tenure",
         "Percentage of properties",
         filename="hp_tenure",
@@ -255,7 +257,7 @@ if __name__ == "__main__":
     proportions_bar_chart(
         wales_df.loc[wales_df.CURRENT_ENERGY_RATING != "unknown"],
         "CURRENT_ENERGY_RATING",
-        "EPC ratings of all Welsh properties",
+        "EPC ratings of all Welsh EPC-registered properties",
         "Energy efficiency rating",
         "Percentage of properties",
         filename="epc_all",
@@ -268,7 +270,7 @@ if __name__ == "__main__":
         "CURRENT_ENERGY_RATING",
         [
             "EPC ratings of owner-occupied and privately rented",
-            "Welsh properties with heat pumps",
+            "Welsh EPC-registered properties with heat pumps",
         ],
         "Energy efficiency rating",
         "Percentage of properties",
