@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     total_cumulative_installations_chart = time_series_comparison(
         data=total_cumulative_installations,
-        title="Cumulative MCS installations over time",
+        title="Cumulative MCS certified heat pump installations over time",
         y_var="cumsum:Q",
         y_title="Number of heat pump installations",
         color_var="colour:N",
