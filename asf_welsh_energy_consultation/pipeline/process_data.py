@@ -478,13 +478,18 @@ def get_total_on_off_gas_postcodes():
     oa = get_data.get_postcode_to_oa()
 
     postcodes_og = oa.merge(og, how="left", on="postcode")
+
+    # LSOA code used to get country code and filter for Wales
     postcodes_og["country"] = postcodes_og["lsoa_code"].apply(lambda x: str(x)[0])
     wales_og = postcodes_og[postcodes_og["country"] == "W"]
 
+    # Any postcodes not in off gas dataset have NA values in 'off_gas' col
+    # We assume the remaining postcodes are on gas and fillna with 'on gas'
     wales_og["off_gas"] = (
         wales_og["off_gas"].fillna("On gas").replace({True: "Off gas"})
     )
 
+    # Calculate % of postcodes on and off gas
     wales_og_dict = wales_og["off_gas"].value_counts(dropna=False).to_dict()
     wales_postcodes_og_pct_dict = {
         "Off gas": (
