@@ -267,7 +267,7 @@ if __name__ == "__main__":
         subset_year_a_mean = process_data.mean_installations_per_year(2015, 2021)
         subset_year_a_median = process_data.median_installations_per_year(2015, 2021)
         subset_year_a_text = (
-            f"\nMean number of MCS installations in Wales per year from 2016-2020: {subset_year_a_mean}."
+            f"\n\nMean number of MCS installations in Wales per year from 2016-2020: {subset_year_a_mean}."
             f"\nMedian number of MCS installations in Wales per year from 2016-2020: {subset_year_a_median}."
         )
 
@@ -275,14 +275,17 @@ if __name__ == "__main__":
         subset_year_b_text = f"\nMean number of MCS installations in Wales per year from 2021-2022: {subset_year_b_mean}."
 
         installations_df = process_data.get_installations_per_year()
-        installations_2023 = installations_df[installations_df["year"] == 2023]["n"]
+        # Get single value for installations in 2023
+        installations_2023 = installations_df[installations_df["year"] == 2023][
+            "n"
+        ].values[0]
 
-        with open(os.path.join(output_folder, "stats.txt"), "w") as stats_txt:
+        with open(os.path.join(output_folder, "stats.txt"), "a") as stats_txt:
             stats_txt.writelines(
                 [
                     subset_year_a_text,
                     subset_year_b_text,
-                    f"Total installations in 2023: {installations_2023}",
+                    f"\nTotal installations in 2023: {installations_2023}",
                 ]
             )
 
