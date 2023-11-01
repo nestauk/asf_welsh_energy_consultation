@@ -278,28 +278,6 @@ def get_dwelling_data():
     return dwellings
 
 
-def get_postcode_to_oa():
-    """
-    Get postcode to LSOA df.
-
-    Returns:
-        pandas.DataFrame: Postcode to LSOA.
-    """
-    oa_path = os.path.join(
-        input_data_path, config_file["supplementary_data"]["postcode_to_oa_data"]
-    )
-    oa = pd.read_csv(
-        PROJECT_DIR / oa_path, encoding="latin-1"
-    )  # latin-1 as otherwise invalid byte
-
-    oa = oa[["pcd7", "lsoa11cd"]].rename(
-        columns={"pcd7": "postcode", "lsoa11cd": "lsoa_code"}
-    )
-    oa["postcode"] = oa["postcode"].str.replace(" ", "")
-
-    return oa
-
-
 def get_offgas():
     """Get dataset of off-gas-grid postcodes.
 
