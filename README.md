@@ -27,7 +27,7 @@ The remainder of the charts in the response can be produced from code in the rep
   - You can specify which supplementary data folder to use by passing the `--supp_data` argument. It defaults to using the latest supplementary data folder.
   - Run `python asf_welsh_energy_consultation/analysis/produce_plots_and_stats.py -h` for more info.
 
-The script should generate the following six plots which will be saved in your local repo in `outputs/figures`:
+The script should generate the following seven plots which will be saved in your local repo in `outputs/figures`:
 
 - `cumulative_retrofits.html`
 - `electric_tenure.html`
@@ -35,6 +35,7 @@ The script should generate the following six plots which will be saved in your l
 - `installations_by_rurality.html`
 - `new_build_hp_cumulative.html`
 - `new_build_hp_proportion.html`
+- `total_cumulative_installations.html`
 
 It should generate a further 10 plots, five in English and five in Welsh, saved in `outputs/figures/english` and `outputs/figures/welsh`, respectively:
 
