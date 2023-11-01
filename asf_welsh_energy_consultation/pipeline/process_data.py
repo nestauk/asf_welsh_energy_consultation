@@ -111,8 +111,6 @@ def cumsums_by_variable(variable, new_var_name, data=enhanced_mcs):
 
 # PROCESSING EPC
 
-wales_epc = get_data.get_wales_processed_epc()
-
 
 def correct_new_dwelling_labels():
     """
@@ -122,6 +120,7 @@ def correct_new_dwelling_labels():
     Returns:
         pd.DataFrame: Wales EPC certificates
     """
+    wales_epc = get_data.get_wales_processed_epc()
     wales_epc["rank"] = wales_epc.groupby("UPRN")["INSPECTION_DATE"].rank(
         "dense", na_option="bottom"
     )
@@ -247,6 +246,31 @@ def identify_mcs_with_multiple_epc():
     return duplicate_uprns
 
 
+def add_unique_mcs_id(df):
+    """
+    Add unique id column generated from MCS commission date, address 1, 2 and 3, and postcode columns.
+
+    Args:
+        df: DataFrame to add unique id column to. Df must be derived from MCS data with the appropriate columns.
+
+    Returns:
+        pandas.DataFrame: DataFrame with unique ID column added.
+    """
+    df["unique_id"] = (
+        df["commission_date"].astype(str)
+        + ".."
+        + df["address_1"].astype(str)
+        + ".."
+        + df["address_2"].astype(str)
+        + ".."
+        + df["address_3"].astype(str)
+        + ".."
+        + df["postcode"].astype(str)
+    )
+
+    return df
+
+
 def mcs_epc_first_records():
     """Get first records from fully joined MCS-EPC dataset. Note: all rows with UPRNs associated with multiple MCS installations
     in the dataset are removed to avoid double counting.
@@ -271,8 +295,10 @@ def mcs_epc_first_records():
         )
     mcs_epc = mcs_epc.loc[mcs_epc["country"] == "Wales"].reset_index(drop=True)
 
+    mcs_epc = add_unique_mcs_id(mcs_epc)
+
     first_records = (
-        mcs_epc.sort_values("INSPECTION_DATE").groupby("original_mcs_index").head(1)
+        mcs_epc.sort_values("INSPECTION_DATE").groupby(["unique_id"]).head(1)
     )
 
     return first_records
@@ -315,14 +341,17 @@ def get_mcs_retrofits():
     first_records = add_hp_when_built_column(first_records)
 
     hp_when_built_indices = first_records.loc[first_records["assumed_hp_when_built"]][
-        "original_mcs_index"
+        "unique_id"
     ]
     # note: for properties not joined to EPC, assumed_hp_when_built is False
     # this makes sense because if they had been built with a HP we would expect them to appear in EPC
     # due to new build EPC requirements
 
     enhanced_mcs = get_enhanced_mcs()
-    mcs_retrofits = enhanced_mcs.loc[~enhanced_mcs.index.isin(hp_when_built_indices)]
+    enhanced_mcs = add_unique_mcs_id(enhanced_mcs)
+    mcs_retrofits = enhanced_mcs.loc[
+        ~enhanced_mcs["unique_id"].isin(hp_when_built_indices)
+    ]
 
     return mcs_retrofits
 
