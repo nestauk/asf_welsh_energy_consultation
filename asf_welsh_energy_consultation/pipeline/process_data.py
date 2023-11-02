@@ -109,6 +109,33 @@ def get_enhanced_mcs():
     return mcs
 
 
+def get_total_cumsums():
+    """
+    Gets cumulative MCS installations for Wales.
+
+    Returns:
+        pd.Dataframe containing cumulative MCS installations for Wales over time.
+
+    """
+    mcs = get_enhanced_mcs()
+    mcs["n"] = 1
+    cumulative_total = mcs.groupby("commission_date")["n"].sum().reset_index()
+    cumulative_total["n"].sum()
+
+    # Sort by date ascending
+    cumulative_total = cumulative_total.sort_values("commission_date")
+
+    # Get cumulative total
+    cumulative_total["cumsum"] = cumulative_total.n.cumsum()
+    cumulative_total = cumulative_total.loc[
+        cumulative_total.commission_date >= "2015-01-01"
+    ].reset_index(drop=True)
+    cumulative_total = cumulative_total.rename(columns={"commission_date": "date"})
+    cumulative_total["colour"] = 1  # add single colour category for plotting
+
+    return cumulative_total
+
+
 def cumsums_by_variable(
     variable, new_var_name, data, installation_date_col="HP_INSTALL_DATE"
 ):

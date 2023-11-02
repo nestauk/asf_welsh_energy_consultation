@@ -34,6 +34,21 @@ if not os.path.isdir(output_folder):
 
 if __name__ == "__main__":
     # ======================================================
+    # MCS installations
+
+    total_cumulative_installations = process_data.get_total_cumsums()
+
+    total_cumulative_installations_chart = time_series_comparison(
+        data=total_cumulative_installations,
+        title="Cumulative MCS certified heat pump installations over time",
+        y_var="cumsum:Q",
+        y_title="Number of heat pump installations",
+        color_var="colour:N",
+        filename="total_cumulative_installations",
+        output_dir=output_folder,
+    )
+
+    # ======================================================
     # MCS installations, by off-gas status
 
     enhanced_combined = process_data.get_enhanced_combined()

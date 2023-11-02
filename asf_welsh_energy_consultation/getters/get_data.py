@@ -112,7 +112,6 @@ def get_args():
 arguments = get_args()
 LOCAL_DATA_DIR = arguments.local_data_dir
 input_data_path = os.path.join(supp_data_dir, arguments.supp_data)
-
 wales_epc_path = "wales_epc.csv"
 
 
