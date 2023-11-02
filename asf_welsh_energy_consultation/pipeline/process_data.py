@@ -13,8 +13,57 @@ logger = logging.getLogger(__name__)
 # PROCESSING MCS
 
 
+def get_enhanced_combined():
+    """Get dataset of gold merged EPC and MCS installations data with attached off-gas, country and rurality fields for Wales only.
+
+    Returns:
+        pd.DataFrame: Dataset as described above.
+    """
+    combined = get_data.load_mcs_epc_combined()
+    og = get_data.get_offgas()
+    countries = get_data.get_countries()
+    rural = get_data.get_rurality()
+
+    # join with off-gas data
+    combined = combined.merge(og, on="postcode", how="left")
+    combined["off_gas"] = (
+        combined["off_gas"].fillna("On gas").replace({True: "Off gas"})
+    )
+
+    # join with regions in order to filter to Wales
+    combined = combined.merge(countries, on="postcode", how="left")
+    if combined.country.isna().sum() > 0:
+        logger.warning(
+            f"{combined.country.isna().sum()} MCS installation records have no country match. "
+            f"Potential loss of data when filtering for Wales."
+        )
+    combined = combined.loc[combined["country"] == "Wales"].reset_index(drop=True)
+    # There will be records with no match
+    # Some will be new postcodes (new build developments)
+    # and some may be expired postcodes
+
+    # join with rurality data
+    combined = combined.merge(rural, on="postcode", how="left")
+    if combined.rurality_10_code.isna().sum() > 0:
+        logger.warning(
+            f"Loss of data: {combined.rurality_10_code.isna().sum()} Welsh merged EPC/MCS installation records have no rurality code match."
+        )
+
+    # add custom rurality column (rurality "type 7": all different types of urban mapped to Urban)
+    combined["rurality_7"] = combined["rurality_10_label"].replace(
+        {
+            "Urban city and town": "Urban",
+            "Urban major conurbation": "Urban",
+            "Urban city and town in a sparse setting": "Urban",
+            "Urban minor conurbation": "Urban",
+        }
+    )
+
+    return combined
+
+
 def get_enhanced_mcs():
-    """Get dataset of domestic MCS installations with attached off-gas, country and rurality fields.
+    """Get dataset of domestic MCS installations with attached off-gas, country and rurality fields for Wales only.
 
     Returns:
         pd.DataFrame: Dataset as described above.
@@ -60,11 +109,9 @@ def get_enhanced_mcs():
     return mcs
 
 
-# load enhanced MCS as part of this script, so only needs to be done once
-enhanced_mcs = get_enhanced_mcs()
-
-
-def cumsums_by_variable(variable, new_var_name, data=enhanced_mcs):
+def cumsums_by_variable(
+    variable, new_var_name, data, installation_date_col="HP_INSTALL_DATE"
+):
     """Process data into a form giving the cumulative total of
     installations on each date for each category of a variable.
 
@@ -78,15 +125,15 @@ def cumsums_by_variable(variable, new_var_name, data=enhanced_mcs):
     """
 
     # calculate total number of installations for each date/category pair
-    totals = data.groupby(["commission_date", variable]).size()
+    totals = data.groupby([installation_date_col, variable]).size()
 
     totals = totals.reset_index().rename(columns={0: "sum"})
 
     idx = pd.date_range(
-        totals["commission_date"].min(), totals["commission_date"].max()
+        totals[installation_date_col].min(), totals[installation_date_col].max()
     )
 
-    totals = totals.pivot(index="commission_date", columns=variable).fillna(0)
+    totals = totals.pivot(index=installation_date_col, columns=variable).fillna(0)
 
     totals.index = pd.DatetimeIndex(totals.index)
 
