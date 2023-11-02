@@ -34,9 +34,11 @@ if not os.path.isdir(output_folder):
 
 if __name__ == "__main__":
     # ======================================================
-    # MCS installations
-
-    total_cumulative_installations = process_data.get_total_cumsums()
+    # Total MCS installations
+    enhanced_mcs = process_data.get_enhanced_combined(mcs_or_gold="mcs")
+    total_cumulative_installations = process_data.get_total_cumsums(
+        data=enhanced_mcs, installation_date_col="commission_date"
+    )
 
     total_cumulative_installations_chart = time_series_comparison(
         data=total_cumulative_installations,
@@ -51,9 +53,11 @@ if __name__ == "__main__":
     # ======================================================
     # MCS installations, by off-gas status
 
-    enhanced_combined = process_data.get_enhanced_combined()
     installations_by_gas_status = process_data.cumsums_by_variable(
-        "off_gas", "Gas status", data=enhanced_combined
+        "off_gas",
+        "Gas status",
+        data=enhanced_mcs,
+        installation_date_col="commission_date",
     )
 
     installations_by_gas_status_chart = time_series_comparison(
@@ -72,9 +76,11 @@ if __name__ == "__main__":
     # ======================================================
     # MCS installations, by rurality
 
-    enhanced_combined = process_data.get_enhanced_combined()
     installations_by_rurality = process_data.cumsums_by_variable(
-        "rurality_2_label", "Rurality", data=enhanced_combined
+        "rurality_2_label",
+        "Rurality",
+        data=enhanced_mcs,
+        installation_date_col="commission_date",
     )
 
     installations_by_rurality_chart = time_series_comparison(
@@ -88,6 +94,70 @@ if __name__ == "__main__":
         color_var="Rurality:N",
         domain_max=installations_by_rurality.date.max(),
         filename="installations_by_rurality",
+        output_dir=output_folder,
+    )
+
+    # ======================================================
+    # Total MCS and EPC installations
+    enhanced_combined = process_data.get_enhanced_combined(mcs_or_gold="gold")
+    gold_total_cumulative_installations = process_data.get_total_cumsums(
+        data=enhanced_combined, installation_date_col="HP_INSTALL_DATE"
+    )
+
+    gold_total_cumulative_installations_chart = time_series_comparison(
+        data=gold_total_cumulative_installations,
+        title="Cumulative heat pump installations over time",
+        y_var="cumsum:Q",
+        y_title="Number of heat pump installations",
+        color_var="colour:N",
+        filename="gold_total_cumulative_installations",
+        output_dir=output_folder,
+    )
+
+    # ======================================================
+    # MCS and EPC installations, by off-gas status
+
+    gold_installations_by_gas_status = process_data.cumsums_by_variable(
+        "off_gas",
+        "Gas status",
+        data=enhanced_combined,
+        installation_date_col="HP_INSTALL_DATE",
+    )
+
+    gold_installations_by_gas_status_chart = time_series_comparison(
+        data=gold_installations_by_gas_status,
+        title=[
+            "Cumulative number of heat pump installations in Welsh homes",
+            "located in off- and on-gas postcodes",
+        ],
+        y_var="Number of heat pumps:Q",
+        y_title="Number of heat pump installations",
+        color_var="Gas status:N",
+        filename="gold_installations_by_gas_status",
+        output_dir=output_folder,
+    )
+
+    # ======================================================
+    # MCS and EPC installations, by rurality
+
+    gold_installations_by_rurality = process_data.cumsums_by_variable(
+        "rurality_2_label",
+        "Rurality",
+        data=enhanced_combined,
+        installation_date_col="HP_INSTALL_DATE",
+    )
+
+    gold_installations_by_rurality_chart = time_series_comparison(
+        data=gold_installations_by_rurality,
+        title=[
+            "Cumulative number of heat pump installations",
+            "in Welsh homes located in rural vs urban postcodes",
+        ],
+        y_var="Number of heat pumps:Q",
+        y_title="Number of heat pump installations",
+        color_var="Rurality:N",
+        domain_max=installations_by_rurality.date.max(),
+        filename="gold_installations_by_rurality",
         output_dir=output_folder,
     )
 
@@ -214,11 +284,16 @@ if __name__ == "__main__":
 
     # Key statistics
     intro = "Summary statistics for heat pumps in Wales\n\n"
-    total_hp = f"Number of heat pumps: {len(wales_hp)}\n"
-    total_epc = f"Number of properties in EPC: {len(wales_df)}\n"
-    hp_perc = "Estimated percentage of properties with a heat pump: \
+    total_epc_hp = f"Number of heat pumps in EPC: {len(wales_hp)}\n"
+    total_epc_properties = f"Number of properties in EPC: {len(wales_df)}\n"
+    hp_perc = "Estimated percentage of EPC properties with a heat pump: \
         {:.2%}\n\n".format(
         len(wales_hp) / len(wales_df)
+    )
+
+    total_hp = f"Number of heat pumps in MCS and EPC: {len(enhanced_combined)}\n"
+    total_mcs_installations = (
+        f"Number of MCS-certified heat pump installations: {len(enhanced_mcs)}\n"
     )
 
     tenure_value_counts = wales_hp.TENURE.value_counts(normalize=True).to_string()
@@ -243,9 +318,11 @@ if __name__ == "__main__":
         stats_txt.writelines(
             [
                 intro,
-                total_hp,
-                total_epc,
+                total_epc_hp,
+                total_epc_properties,
                 hp_perc,
+                total_hp,
+                total_mcs_installations,
                 tenure_value_counts,
                 epc_c_wall,
                 epc_c_wall_proportion,
