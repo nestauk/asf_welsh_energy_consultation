@@ -13,11 +13,16 @@ from asf_core_data.getters.mcs_getters.get_mcs_installations import (
 
 from asf_core_data.getters.epc.data_batches import get_batch_path
 from asf_core_data.config import base_config
-from asf_core_data.getters.data_getters import download_core_data, logger
+from asf_core_data.getters.data_getters import (
+    download_core_data,
+    logger,
+    download_from_s3,
+)
 
 import pandas as pd
 import numpy as np
 import os
+import dask.dataframe as dd
 
 from argparse import ArgumentParser
 
@@ -61,6 +66,20 @@ def create_argparser():
         help="Specifies which MCS installations data batch to use. Only date required in YYMMDD format. "
         'Defaults to "newest"',
         default="newest",
+        type=str,
+    )
+
+    parser.add_argument(
+        "--gold_mcs_epc_batch",
+        help="Specifies which gold merged EPC-MCS_installation-MCS_installer data batch to use. Only date required in YYMMDD format.",
+        type=str,
+    )
+
+    parser.add_argument(
+        "--download_gold_data_from_s3",
+        help="If set to True, downloads specified batch of gold merged EPC-MCS_installation-MCS_installer data from S3 locally. "
+        "Note that this download can take 30 minutes and not recommended if `hp_installed_gold_[YYMMDD]` already in supplementary data folder in `inputs`.",
+        default=False,
         type=str,
     )
 
@@ -485,3 +504,73 @@ def load_wales_hp(wales_epc):
     wales_hp = wales_epc.loc[wales_epc.HP_INSTALLED].reset_index(drop=True)
 
     return wales_hp
+
+
+def load_mcs_epc_combined():
+    """
+    Get combined gold MCS-EPC dataset filtered for rows with heat pump installations in domestic dwellings. Use local preprocessed dataset unless specified
+    to download data from S3. Downloaded data goes through pre-processing to produce desired pd.DataFrame.
+
+    Returns:
+        pd.DataFrame: Gold MCS-EPC dataset for domestic dwellings with heat pumps.
+    """
+    args = get_args()
+    batch = args.gold_mcs_epc_batch
+    download_data = args.download_gold_data_from_s3
+
+    if not download_data:
+        path = os.path.join(input_data_path, f"hp_installed_gold_{batch}.csv")
+        return pd.read_csv(path)
+
+    else:
+        path = f"outputs/gold/merged_epc_mcs_installations_installers_{batch}.csv"
+
+        logger.info(f"Loading {path} from S3. This will take a while.")
+
+        download_from_s3(path_to_file=path, output_path=input_data_path)
+
+        ddf = dd.read_csv(
+            os.path.join(
+                input_data_path,
+                f"outputs/gold/merged_epc_mcs_installations_installers_{batch}.csv",
+            ),
+            dtype={
+                "HP_INSTALL_DATE": "object",
+                "UPRN": "object",
+                "installation_type": "object",
+            },
+        )
+
+        # Get rows with HP installed only, data already filtered for domestic only
+        hp_installed = ddf[ddf["HP_INSTALLED"] == True]
+        hp_installed = hp_installed[
+            [
+                "POSTCODE",
+                "INSPECTION_DATE",
+                "COUNTRY",
+                "UPRN",
+                "HP_INSTALLED",
+                "HP_TYPE",
+                "HP_INSTALL_DATE",
+                "MCS_AVAILABLE",
+                "EPC_AVAILABLE",
+            ]
+        ]
+
+        hp_installed = hp_installed.rename(columns={"POSTCODE": "postcode"})
+
+        # Convert to pandas df
+        df = hp_installed.compute()
+
+        df["HP_INSTALL_DATE"] = pd.to_datetime(df["HP_INSTALL_DATE"])
+
+        # Batch 231009 contains data from MCS up to 30 June 2023 and data from EPC up to 31 July 2023
+        # Must remove additional month of EPC data for consistency
+        if batch == "231009":
+            df = df[df["HP_INSTALL_DATE"] < "2023-07-01"]
+
+        df.to_csv(
+            os.path.join(input_data_path, f"hp_installed_gold_{batch}.csv"), index=False
+        )
+
+        return df
