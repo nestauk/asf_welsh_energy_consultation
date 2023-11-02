@@ -44,7 +44,7 @@ def get_enhanced_mcs():
     mcs = mcs.merge(rural, on="postcode", how="left")
     if mcs.rurality_10_code.isna().sum() > 0:
         logger.warning(
-            f"Loss of data: {mcs.rurality_10_code.isna().sum()} Welsh MCS installation records have no rurality code match."
+            f"Loss of data when using rurality variable: {mcs.rurality_10_code.isna().sum()} Welsh MCS installation records have no rurality code match."
         )
 
     # add custom rurality column (rurality "type 7": all different types of urban mapped to Urban)
