@@ -531,7 +531,7 @@ def load_mcs_epc_combined():
         ddf = dd.read_csv(
             os.path.join(
                 input_data_path,
-                f"outputs/gold/merged_epc_mcs_installations_installers_{batch}.csv",
+                f"merged_epc_mcs_installations_installers_{batch}.csv",
             ),
             dtype={
                 "HP_INSTALL_DATE": "object",
