@@ -36,8 +36,9 @@ if __name__ == "__main__":
     # ======================================================
     # MCS installations, by off-gas status
 
+    enhanced_combined = process_data.get_enhanced_combined()
     installations_by_gas_status = process_data.cumsums_by_variable(
-        "off_gas", "Gas status"
+        "off_gas", "Gas status", data=enhanced_combined
     )
 
     installations_by_gas_status_chart = time_series_comparison(
@@ -56,8 +57,9 @@ if __name__ == "__main__":
     # ======================================================
     # MCS installations, by rurality
 
+    enhanced_combined = process_data.get_enhanced_combined()
     installations_by_rurality = process_data.cumsums_by_variable(
-        "rurality_2_label", "Rurality"
+        "rurality_2_label", "Rurality", data=enhanced_combined
     )
 
     installations_by_rurality_chart = time_series_comparison(
@@ -133,7 +135,10 @@ if __name__ == "__main__":
 
     mcs_retrofits = process_data.get_mcs_retrofits()
     mcs_retrofit_cumsums = process_data.cumsums_by_variable(
-        "country", "wales_col", data=mcs_retrofits
+        "country",
+        "wales_col",
+        data=mcs_retrofits,
+        installation_date_col="commission_date",
     )
     # this function works without separating by category - 'wales_col' is a whole column of "Wales" (not used)
 
