@@ -13,44 +13,48 @@ logger = logging.getLogger(__name__)
 # PROCESSING MCS
 
 
-def get_enhanced_combined():
-    """Get dataset of gold merged EPC and MCS installations data with attached off-gas, country and rurality fields for Wales only.
-
+def get_enhanced_combined(mcs_or_gold="mcs"):
+    """Get dataset of either MCS installations or gold merged EPC and MCS installations data with attached off-gas, country and rurality fields for Wales only.
+    Args:
+        mcs_or_gold, str: Specifies use of MCS installations data or MCS-EPC gold merged data for creating combined dataset. Defaults to "mcs".
     Returns:
         pd.DataFrame: Dataset as described above.
     """
-    combined = get_data.load_mcs_epc_combined()
+    if mcs_or_gold == "gold":
+        df = get_data.load_mcs_epc_combined()
+        df_name = "gold merged EPC-MCS installation"
+    else:
+        df = get_data.get_mcs_domestic()
+        df_name = "MCS installation"
     og = get_data.get_offgas()
     countries = get_data.get_countries()
     rural = get_data.get_rurality()
 
     # join with off-gas data
-    combined = combined.merge(og, on="postcode", how="left")
-    combined["off_gas"] = (
-        combined["off_gas"].fillna("On gas").replace({True: "Off gas"})
-    )
+    df = df.merge(og, on="postcode", how="left")
+    df["off_gas"] = df["off_gas"].fillna("On gas").replace({True: "Off gas"})
 
     # join with regions in order to filter to Wales
-    combined = combined.merge(countries, on="postcode", how="left")
-    if combined.country.isna().sum() > 0:
+    df = df.merge(countries, on="postcode", how="left")
+    if df.country.isna().sum() > 0:
         logger.warning(
-            f"{combined.country.isna().sum()} MCS installation records have no country match. "
+            f"{df.country.isna().sum()} {df_name} records have no country match. "
             f"Potential loss of data when filtering for Wales."
         )
-    combined = combined.loc[combined["country"] == "Wales"].reset_index(drop=True)
+    df = df.loc[df["country"] == "Wales"].reset_index(drop=True)
     # There will be records with no match
     # Some will be new postcodes (new build developments)
     # and some may be expired postcodes
 
     # join with rurality data
-    combined = combined.merge(rural, on="postcode", how="left")
-    if combined.rurality_10_code.isna().sum() > 0:
+    df = df.merge(rural, on="postcode", how="left")
+    if df.rurality_10_code.isna().sum() > 0:
         logger.warning(
-            f"Loss of data: {combined.rurality_10_code.isna().sum()} Welsh merged EPC/MCS installation records have no rurality code match."
+            f"Loss of data: {df.rurality_10_code.isna().sum()} Welsh {df_name} records have no rurality code match."
         )
 
     # add custom rurality column (rurality "type 7": all different types of urban mapped to Urban)
-    combined["rurality_7"] = combined["rurality_10_label"].replace(
+    df["rurality_7"] = df["rurality_10_label"].replace(
         {
             "Urban city and town": "Urban",
             "Urban major conurbation": "Urban",
@@ -59,57 +63,10 @@ def get_enhanced_combined():
         }
     )
 
-    return combined
+    return df
 
 
-def get_enhanced_mcs():
-    """Get dataset of domestic MCS installations with attached off-gas, country and rurality fields for Wales only.
-
-    Returns:
-        pd.DataFrame: Dataset as described above.
-    """
-    mcs = get_data.get_mcs_domestic()
-    og = get_data.get_offgas()
-    countries = get_data.get_countries()
-    rural = get_data.get_rurality()
-
-    # join with off-gas data
-    mcs = mcs.merge(og, on="postcode", how="left")
-    mcs["off_gas"] = mcs["off_gas"].fillna("On gas").replace({True: "Off gas"})
-
-    # join with regions in order to filter to Wales
-    mcs = mcs.merge(countries, on="postcode", how="left")
-    if mcs.country.isna().sum() > 0:
-        logger.warning(
-            f"{mcs.country.isna().sum()} MCS installation records have no country match. "
-            f"Potential loss of data when filtering for Wales."
-        )
-    mcs = mcs.loc[mcs["country"] == "Wales"].reset_index(drop=True)
-    # There will be records with no match
-    # Some will be new postcodes (new build developments)
-    # and some may be expired postcodes
-
-    # join with rurality data
-    mcs = mcs.merge(rural, on="postcode", how="left")
-    if mcs.rurality_10_code.isna().sum() > 0:
-        logger.warning(
-            f"Loss of data: {mcs.rurality_10_code.isna().sum()} Welsh MCS installation records have no rurality code match."
-        )
-
-    # add custom rurality column (rurality "type 7": all different types of urban mapped to Urban)
-    mcs["rurality_7"] = mcs["rurality_10_label"].replace(
-        {
-            "Urban city and town": "Urban",
-            "Urban major conurbation": "Urban",
-            "Urban city and town in a sparse setting": "Urban",
-            "Urban minor conurbation": "Urban",
-        }
-    )
-
-    return mcs
-
-
-def get_total_cumsums():
+def get_total_cumsums(data, installation_date_col):
     """
     Gets cumulative MCS installations for Wales.
 
@@ -117,20 +74,18 @@ def get_total_cumsums():
         pd.Dataframe containing cumulative MCS installations for Wales over time.
 
     """
-    mcs = get_enhanced_mcs()
-    mcs["n"] = 1
-    cumulative_total = mcs.groupby("commission_date")["n"].sum().reset_index()
-    cumulative_total["n"].sum()
+    data["n"] = 1
+    cumulative_total = data.groupby(installation_date_col)["n"].sum().reset_index()
 
     # Sort by date ascending
-    cumulative_total = cumulative_total.sort_values("commission_date")
+    cumulative_total = cumulative_total.sort_values(installation_date_col)
 
     # Get cumulative total
     cumulative_total["cumsum"] = cumulative_total.n.cumsum()
     cumulative_total = cumulative_total.loc[
-        cumulative_total.commission_date >= "2015-01-01"
+        cumulative_total[installation_date_col] >= "2015-01-01"
     ].reset_index(drop=True)
-    cumulative_total = cumulative_total.rename(columns={"commission_date": "date"})
+    cumulative_total = cumulative_total.rename(columns={installation_date_col: "date"})
     cumulative_total["colour"] = 1  # add single colour category for plotting
 
     return cumulative_total
@@ -395,7 +350,7 @@ def get_mcs_retrofits():
     # this makes sense because if they had been built with a HP we would expect them to appear in EPC
     # due to new build EPC requirements
 
-    enhanced_mcs = get_enhanced_mcs()
+    enhanced_mcs = get_enhanced_combined(mcs_or_gold="mcs")
     mcs_retrofits = enhanced_mcs.loc[~enhanced_mcs.index.isin(hp_when_built_indices)]
 
     return mcs_retrofits
