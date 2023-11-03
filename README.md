@@ -25,17 +25,20 @@ The remainder of the charts in the response can be produced from code in the rep
   - You can specify which batch of EPC data to download and MCS data to load from S3 by passing the `--epc_batch` and `--mcs_batch` arguments, both
     default to downloading/loading the newest data from S3, respectively.
   - You can specify which supplementary data folder to use by passing the `--supp_data` argument. It defaults to using the latest supplementary data folder.
+  - You can specify which batch of gold MCS-EPC merged data to use with the `--gold_mcs_epc_batch` argument. Passing batch as YYMMDD.
+  - If you wish to download and process a new gold MCS-EPC batch (i.e. a different batch from the preprocessed `hp_installed_gold_[YYMMDD].csv` file in the supplementary data folder
+    in `inputs/data`), you can download and process a new gold MCS-EPC merged dataset by setting the `--download_gold_data_from_s3` argument to `True`. Note that this download can take ~30 minutes.
   - Run `python asf_welsh_energy_consultation/analysis/produce_plots_and_stats.py -h` for more info.
 
-The script should generate the following seven plots which will be saved in your local repo in `outputs/figures`:
+The script should generate the following nine plots which will be saved in your local repo in `outputs/figures`:
 
 - `cumulative_retrofits.html`
 - `electric_tenure.html`
-- `installations_by_gas_status.html`
-- `installations_by_rurality.html`
+- `[gold_]installations_by_gas_status.html`
+- `[gold_]installations_by_rurality.html`
 - `new_build_hp_cumulative.html`
 - `new_build_hp_proportion.html`
-- `total_cumulative_installations.html`
+- `[gold_]total_cumulative_installations.html`
 
 It should generate a further 10 plots, five in English and five in Welsh, saved in `outputs/figures/english` and `outputs/figures/welsh`, respectively:
 
