@@ -28,7 +28,7 @@ def get_enhanced_combined(mcs_or_gold="mcs"):
         df_name = "MCS installation"
     og = get_data.get_offgas()
     countries = get_data.get_countries()
-    rural = get_data.get_rurality()
+    rural = get_data.get_rurality_by_oa()
 
     # join with off-gas data
     df = df.merge(og, on="postcode", how="left")
@@ -50,7 +50,7 @@ def get_enhanced_combined(mcs_or_gold="mcs"):
     df = df.merge(rural, on="postcode", how="left")
     if df.rurality_10_code.isna().sum() > 0:
         logger.warning(
-            f"Loss of data: {df.rurality_10_code.isna().sum()} Welsh {df_name} records have no rurality code match."
+            f"Loss of data when using rurality variable: {df.rurality_10_code.isna().sum()} Welsh {df_name} records have no rurality code match."
         )
 
     # add custom rurality column (rurality "type 7": all different types of urban mapped to Urban)
@@ -68,10 +68,10 @@ def get_enhanced_combined(mcs_or_gold="mcs"):
 
 def get_total_cumsums(data, installation_date_col):
     """
-    Gets cumulative MCS installations for Wales.
+    Gets cumulative number of HP installations for Wales.
 
     Returns:
-        pd.Dataframe containing cumulative MCS installations for Wales over time.
+        pd.Dataframe containing cumulative number of HP installations for Wales over time.
 
     """
     data["n"] = 1
@@ -140,8 +140,6 @@ def cumsums_by_variable(
 
 # PROCESSING EPC
 
-wales_epc = get_data.get_wales_processed_epc()
-
 
 def correct_new_dwelling_labels():
     """
@@ -151,6 +149,7 @@ def correct_new_dwelling_labels():
     Returns:
         pd.DataFrame: Wales EPC certificates
     """
+    wales_epc = get_data.get_wales_processed_epc()
     wales_epc["rank"] = wales_epc.groupby("UPRN")["INSPECTION_DATE"].rank(
         "dense", na_option="bottom"
     )
@@ -276,6 +275,31 @@ def identify_mcs_with_multiple_epc():
     return duplicate_uprns
 
 
+def add_unique_mcs_id(df):
+    """
+    Add unique id column generated from MCS commission date, address 1, 2 and 3, and postcode columns.
+
+    Args:
+        df: DataFrame to add unique id column to. Df must be derived from MCS data with the appropriate columns.
+
+    Returns:
+        pandas.DataFrame: DataFrame with unique ID column added.
+    """
+    df["unique_id"] = (
+        df["commission_date"].astype(str)
+        + ".."
+        + df["address_1"].astype(str)
+        + ".."
+        + df["address_2"].astype(str)
+        + ".."
+        + df["address_3"].astype(str)
+        + ".."
+        + df["postcode"].astype(str)
+    )
+
+    return df
+
+
 def mcs_epc_first_records():
     """Get first records from fully joined MCS-EPC dataset. Note: all rows with UPRNs associated with multiple MCS installations
     in the dataset are removed to avoid double counting.
@@ -300,8 +324,10 @@ def mcs_epc_first_records():
         )
     mcs_epc = mcs_epc.loc[mcs_epc["country"] == "Wales"].reset_index(drop=True)
 
+    mcs_epc = add_unique_mcs_id(mcs_epc)
+
     first_records = (
-        mcs_epc.sort_values("INSPECTION_DATE").groupby("original_mcs_index").head(1)
+        mcs_epc.sort_values("INSPECTION_DATE").groupby(["unique_id"]).head(1)
     )
 
     return first_records
@@ -344,14 +370,17 @@ def get_mcs_retrofits():
     first_records = add_hp_when_built_column(first_records)
 
     hp_when_built_indices = first_records.loc[first_records["assumed_hp_when_built"]][
-        "original_mcs_index"
+        "unique_id"
     ]
     # note: for properties not joined to EPC, assumed_hp_when_built is False
     # this makes sense because if they had been built with a HP we would expect them to appear in EPC
     # due to new build EPC requirements
 
     enhanced_mcs = get_enhanced_combined(mcs_or_gold="mcs")
-    mcs_retrofits = enhanced_mcs.loc[~enhanced_mcs.index.isin(hp_when_built_indices)]
+    enhanced_mcs = add_unique_mcs_id(enhanced_mcs)
+    mcs_retrofits = enhanced_mcs.loc[
+        ~enhanced_mcs["unique_id"].isin(hp_when_built_indices)
+    ]
 
     return mcs_retrofits
 
@@ -413,3 +442,122 @@ def generate_age_data(wales_df):
     age_data["cumul_prop"] = age_data["percentage"].cumsum()
 
     return age_data
+
+
+def get_installations_per_year():
+    """
+    Get MCS installations per year for Wales.
+    Returns:
+        pandas.DataFrame of MCS installations per year in Wales.
+
+    """
+    mcs = get_enhanced_mcs()
+    mcs["n"] = 1
+    mcs["year"] = pd.to_datetime(mcs["commission_date"]).dt.year
+    installations_by_year = mcs.groupby("year")["n"].sum().reset_index()
+
+    # Sort by date ascending
+    installations_by_year = installations_by_year.sort_values("year")
+    installations_by_year = installations_by_year.rename(
+        columns={"commission_date": "date"}
+    )
+
+    return installations_by_year
+
+
+def mean_installations_per_year(min_year, max_year):
+    """
+    Get mean average MCS installations in Wales per year for given date range.
+    Args:
+        min_year: Minimum year (exclusive)
+        max_year: Maximum year (exclusive)
+
+    Returns:
+        int: Mean average MCS installations per year.
+    """
+    installations_by_year = get_installations_per_year()
+    subset = installations_by_year[
+        (installations_by_year["year"] > min_year)
+        & (installations_by_year["year"] < max_year)
+    ]
+
+    return subset["n"].mean()
+
+
+def median_installations_per_year(min_year, max_year):
+    """
+    Get median average MCS installations in Wales per year for given date range.
+    Args:
+        min_year: Minimum year (exclusive)
+        max_year: Maximum year (exclusive)
+
+    Returns:
+        int: Median average MCS installations per year.
+    """
+    installations_by_year = get_installations_per_year()
+    subset = installations_by_year[
+        (installations_by_year["year"] > min_year)
+        & (installations_by_year["year"] < max_year)
+    ]
+
+    return subset["n"].median()
+
+
+def get_total_rural_and_urban_properties():
+    """
+    Get total count of properties in Wales in urban vs rural locations.
+
+    Returns:
+        dict: Percent of rural and urban properties in Wales.
+    """
+    rural = get_data.get_rurality()
+    dwellings = get_data.get_dwelling_data()
+
+    df = dwellings.merge(rural, how="left", on="lsoa_code")
+    df = df[df["country"] == "W"]
+    rurality = df.groupby("rural_2")["total_dwellings"].sum().to_dict()
+    rurality_pct_dict = {
+        "Rural": (rurality["Rural"] / (rurality["Rural"] + rurality["Urban"])) * 100,
+        "Urban": (rurality["Urban"] / (rurality["Rural"] + rurality["Urban"])) * 100,
+    }
+
+    return rurality_pct_dict
+
+
+def get_total_on_off_gas_postcodes():
+    """
+    Get total count of postcodes in Wales which are on- vs off-gas.
+
+    Returns:
+        dict: Percent of on- and off-gas postcodes in Wales.
+    """
+
+    og = get_data.get_offgas()
+    postcodes = get_data.get_countries()
+
+    postcodes_og = postcodes.merge(og, how="left", on="postcode")
+
+    # Any postcodes not in off gas dataset have NA values in 'off_gas' col
+    # We assume the remaining postcodes are on gas and fillna with 'on gas'
+    postcodes_og["off_gas"] = postcodes_og["off_gas"].replace({True: "Off gas"})
+    postcodes_og["off_gas"] = postcodes_og["off_gas"].fillna("On gas")
+
+    # Filter for Wales only
+    wales_og = postcodes_og.loc[postcodes_og["country"] == "Wales"].copy()
+
+    # Calculate % of postcodes on and off gas
+    wales_og_dict = wales_og["off_gas"].value_counts(dropna=False).to_dict()
+    wales_postcodes_og_pct_dict = {
+        "Off gas": (
+            wales_og_dict["Off gas"]
+            / (wales_og_dict["Off gas"] + wales_og_dict["On gas"])
+        )
+        * 100,
+        "On gas": (
+            wales_og_dict["On gas"]
+            / (wales_og_dict["Off gas"] + wales_og_dict["On gas"])
+        )
+        * 100,
+    }
+
+    return wales_postcodes_og_pct_dict

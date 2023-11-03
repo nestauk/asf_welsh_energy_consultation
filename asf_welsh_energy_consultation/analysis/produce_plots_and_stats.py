@@ -9,7 +9,7 @@ import logging
 
 from asf_welsh_energy_consultation import config_file
 from asf_welsh_energy_consultation.config import translation_config
-from asf_welsh_energy_consultation.getters.get_data import get_electric_tenure
+from asf_welsh_energy_consultation.getters import get_data
 from asf_welsh_energy_consultation.pipeline import process_data
 from asf_welsh_energy_consultation.getters.get_data import load_wales_df, load_wales_hp
 from asf_welsh_energy_consultation.pipeline.plotting import (
@@ -39,6 +39,21 @@ if __name__ == "__main__":
     total_cumulative_installations = process_data.get_total_cumsums(
         data=enhanced_mcs, installation_date_col="commission_date"
     )
+
+    total_cumulative_installations_chart = time_series_comparison(
+        data=total_cumulative_installations,
+        title="Cumulative MCS certified heat pump installations over time",
+        y_var="cumsum:Q",
+        y_title="Number of heat pump installations",
+        color_var="colour:N",
+        filename="total_cumulative_installations",
+        output_dir=output_folder,
+    )
+
+    # ======================================================
+    # MCS installations, by off-gas status
+
+    total_cumulative_installations = process_data.get_total_cumsums()
 
     total_cumulative_installations_chart = time_series_comparison(
         data=total_cumulative_installations,
@@ -192,7 +207,7 @@ if __name__ == "__main__":
     logger.info(f"Saved: {os.path.join(output_folder, 'new_build_hp_proportion.html')}")
 
     # ======================================================
-    # Cumulative number of new builds with heat pumps
+    # Cumulative number of new builds with heat pumps - note: uses EPC data only
 
     new_build_hp_cumulative = process_data.get_new_builds_hp_cumsums()
 
@@ -200,8 +215,7 @@ if __name__ == "__main__":
         alt.Chart(
             new_build_hp_cumulative,
             title=[
-                "Cumulative total of EPC registrations for new builds",
-                "with heat pumps in Wales since 2008",
+                "Cumulative heat pump installations in new builds in Wales since 2008",
             ],
         )
         .mark_line()
@@ -209,6 +223,7 @@ if __name__ == "__main__":
             x="Date",
             y="Number of EPCs",
         )
+        .configure_line(color="#0000ff")
         .properties(width=600, height=300)
     )
 
@@ -243,6 +258,7 @@ if __name__ == "__main__":
             ),
             y="Number of heat pumps",
         )
+        .configure_line(color="#0000ff")
         .properties(width=600, height=300)
     )
 
@@ -252,7 +268,7 @@ if __name__ == "__main__":
     # ======================================================
     # Split of properties on electric heating by tenure
 
-    electric_tenure = get_electric_tenure()
+    electric_tenure = get_data.get_electric_tenure()
     N = electric_tenure["n"].sum()
 
     electric_tenure_chart = (
@@ -268,6 +284,7 @@ if __name__ == "__main__":
             y=alt.Y("n", title="Number of properties"),
         )
         .configure(lineBreak="\n")
+        .configure_bar(color="#0000ff")
         .properties(width=600, height=300)
     ).configure_title(fontSize=20)
 
@@ -279,6 +296,7 @@ if __name__ == "__main__":
 
     wales_df = load_wales_df(from_csv=False)
     wales_hp = load_wales_hp(wales_df)
+    wales_mcs = process_data.get_enhanced_mcs()
 
     # English plots
 
@@ -312,7 +330,28 @@ if __name__ == "__main__":
     epc_c_wall_proportion = f"As a proportion of properties in EPC: {len(epc_c_or_above_and_good_walls) / len(wales_df)}\n"
 
     epc_c_wall_roof = f"\n\nNumber of EPC C+ properties with good or very good wall and roof insulation: {len(epc_c_or_above_and_good_walls_and_roof)}\n"
-    epc_c_wall_roof_proportion = f"As a proportion of properties in EPC: {len(epc_c_or_above_and_good_walls_and_roof) / len(wales_df)}"
+    epc_c_wall_roof_proportion = f"As a proportion of properties in EPC: {len(epc_c_or_above_and_good_walls_and_roof) / len(wales_df)}\n\n"
+
+    installations_by_rurality = (
+        "MCS installations by rurality\n"
+        + (
+            wales_mcs["rurality_2_label"].value_counts(normalize=True, dropna=False)
+            * 100
+        ).to_string()
+        + "\n\n"
+    )
+    installations_by_gas_status = (
+        "MCS installations by gas status\n"
+        + (
+            wales_mcs["off_gas"].value_counts(normalize=True, dropna=False) * 100
+        ).to_string()
+        + "\n\n"
+    )
+
+    percent_properties_by_rurality = str(
+        process_data.get_total_rural_and_urban_properties()
+    )
+    percent_postcodes_by_gas = str(process_data.get_total_on_off_gas_postcodes())
 
     with open(os.path.join(output_folder, "stats.txt"), "w") as stats_txt:
         stats_txt.writelines(
@@ -328,14 +367,47 @@ if __name__ == "__main__":
                 epc_c_wall_proportion,
                 epc_c_wall_roof,
                 epc_c_wall_roof_proportion,
+                installations_by_rurality,
+                installations_by_gas_status,
+                "Percent of properties in Wales by rurality:\n",
+                percent_properties_by_rurality,
+                "\n\nPercent of postcodes in Wales by gas status:\n",
+                percent_postcodes_by_gas,
             ]
         )
 
-    # Tenure of Welsh HPs
+    # To recreate October 2023 analysis
+    if get_data.get_args().calculate_average_installations:
+        subset_year_a_mean = process_data.mean_installations_per_year(2015, 2021)
+        subset_year_a_median = process_data.median_installations_per_year(2015, 2021)
+        subset_year_a_text = (
+            f"\n\nMean number of MCS installations in Wales per year from 2016-2020: {subset_year_a_mean}."
+            f"\nMedian number of MCS installations in Wales per year from 2016-2020: {subset_year_a_median}."
+        )
+
+        subset_year_b_mean = process_data.mean_installations_per_year(2020, 2023)
+        subset_year_b_text = f"\nMean number of MCS installations in Wales per year from 2021-2022: {subset_year_b_mean}."
+
+        installations_df = process_data.get_installations_per_year()
+        # Get single value for installations in 2023
+        installations_2023 = installations_df[installations_df["year"] == 2023][
+            "n"
+        ].values[0]
+
+        with open(os.path.join(output_folder, "stats.txt"), "a") as stats_txt:
+            stats_txt.writelines(
+                [
+                    subset_year_a_text,
+                    subset_year_b_text,
+                    f"\nTotal installations in 2023: {installations_2023}",
+                ]
+            )
+
+    # Tenure of Welsh HPs - uses EPC data only
     proportions_bar_chart(
         wales_hp,
         "TENURE",
-        "Tenure of Welsh properties with heat pumps",
+        "Tenure of Welsh EPC-registered properties with heat pumps",
         "Tenure",
         "Percentage of properties",
         filename="hp_tenure",
@@ -352,7 +424,7 @@ if __name__ == "__main__":
     proportions_bar_chart(
         wales_df.loc[wales_df.CURRENT_ENERGY_RATING != "unknown"],
         "CURRENT_ENERGY_RATING",
-        "EPC ratings of all Welsh properties",
+        "EPC ratings of all EPC-registered Welsh properties",
         "Energy efficiency rating",
         "Percentage of properties",
         filename="epc_all",
@@ -365,7 +437,7 @@ if __name__ == "__main__":
         "CURRENT_ENERGY_RATING",
         [
             "EPC ratings of owner-occupied and privately rented",
-            "Welsh properties with heat pumps",
+            "Welsh EPC-registered properties with heat pumps",
         ],
         "Energy efficiency rating",
         "Percentage of properties",

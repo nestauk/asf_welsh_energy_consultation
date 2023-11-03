@@ -19,6 +19,9 @@ The remainder of the charts in the response can be produced from code in the rep
 - Activate conda environment: `conda activate asf_welsh_energy_consultation`
 - Run `make inputs-pull` to pull the zipped supplementary data from S3 and put it in `/inputs/data`. There will be one folder per historical analysis
   containing the supplementary data files as listed in the `Historical analysis` section below.
+
+## Run the script
+
 - Run `python asf_welsh_energy_consultation/analysis/produce_plots_and_stats.py --local_data_dir <YOUR_LOCAL_DIR>`. You need to specify the path to the local
   directory where your local copy of the EPC data is/will be saved by replacing `<YOUR_LOCAL_DIR>` with the path to your "ASF_data" directory or equivalent.
   If you don't have a local directory for ASF core data, you can create a folder called "ASF_data" in your home directory.
@@ -29,8 +32,10 @@ The remainder of the charts in the response can be produced from code in the rep
   - If you wish to download and process a new gold MCS-EPC batch (i.e. a different batch from the preprocessed `hp_installed_gold_[YYMMDD].csv` file in the supplementary data folder
     in `inputs/data`), you can download and process a new gold MCS-EPC merged dataset by setting the `--download_gold_data_from_s3` argument to `True`. Note that this download can take ~30 minutes.
   - Run `python asf_welsh_energy_consultation/analysis/produce_plots_and_stats.py -h` for more info.
+  - To recreate the full October 2023 analysis, set the `--calculate_average_installations` argument to `True`. This will calculate some additional numbers on MCS installations per year included in the October 2023 response. For other historical analyses, this argument is not required and defaults to `False`.
+  - Run `python asf_welsh_energy_consultation/analysis/produce_plots_and_stats.py -h` for more info.
 
-The script should generate the following nine plots which will be saved in your local repo in `outputs/figures`:
+## The script should generate the following ten plots which will be saved in your local repo in `outputs/figures`:
 
 - `cumulative_retrofits.html`
 - `electric_tenure.html`
@@ -83,6 +88,7 @@ October 2023 analysis (`/inputs/data/data_202310`):
 - EPC: 2023_Q2_complete (preprocessed, and preprocessed and deduplicated)
 - mcs_installations_231009.csv
 - mcs_installations_epc_full_231009.csv
+- dwellings_2021.xlsx - [Number of dwellings by housing characteristics in England and Wales 2021 (released 30 March 2023)](https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/numberofdwellingsbyhousingcharacteristicsinenglandandwales)
 - off-gas-live-postcodes-2022.xlsx - check [here](https://www.xoserve.com/a-to-z/) for updates
 - postcodes - [ONS Postcode Directory (August 2023)](https://geoportal.statistics.gov.uk/datasets/ons-postcode-directory-august-2023/about)
 - postcode_to_output_area.csv - [postcode to OA, LSOA, MSAO, LAD lookup (May 2022)](https://geoportal.statistics.gov.uk/datasets/e7824b1475604212a2325cd373946235)
@@ -97,6 +103,7 @@ April 2023 analysis (`/inputs/data/data_202304`):
 - off-gas-live-postcodes-2022.xlsx - check [here](https://www.xoserve.com/a-to-z/) for updates
 - rurality.ods - 2011 Rural Urban Classification for small area geographies, see [here](https://www.ons.gov.uk/methodology/geography/geographicalproducts/ruralurbanclassifications)
 - postcodes ; postcode_to_output_area.csv ; tenure.csv - ONS data with unknown source date
+- dwellings data not historically used in this analysis
 
 ## Contributor guidelines
 

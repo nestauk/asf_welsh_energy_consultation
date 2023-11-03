@@ -64,9 +64,16 @@ def create_argparser():
     parser.add_argument(
         "--mcs_batch",
         help="Specifies which MCS installations data batch to use. Only date required in YYMMDD format. "
-        'Defaults to "newest"',
+        "Defaults to 'newest'",
         default="newest",
         type=str,
+    )
+
+    parser.add_argument(
+        "--calculate_average_installations",
+        help="Calculate additional high level statistics specific for October 2023 analysis. Defaults to 'False'",
+        default=False,
+        type=bool,
     )
 
     parser.add_argument(
@@ -121,7 +128,7 @@ def get_mcs_and_joined_data(epc_version):
     installation or earliest after installation, up to date specified in args.
 
     Returns:
-        pd.DataFrame of specified MCS or MCS-EPC joined dataset.
+        pandas.DataFrame: specified MCS or MCS-EPC joined dataset.
     """
     mcs_date = arguments.mcs_batch
 
@@ -226,6 +233,69 @@ def get_mcs_domestic():
     return mcs_domestic
 
 
+def get_rurality():
+    """
+    Get rurality df with country code column.
+
+    Returns:
+        pandas.DataFrame: Rurality data.
+    """
+    rural_path = os.path.join(
+        input_data_path, config_file["supplementary_data"]["rurality_data"]
+    )
+
+    rural_df = pd.read_excel(
+        os.path.join(PROJECT_DIR, rural_path),
+        engine="odf",
+        sheet_name="LSOA11",
+        skiprows=2,
+    )
+
+    rural_df = rural_df.rename(
+        columns={
+            "Lower Super Output Area 2011 Code": "lsoa_code",
+            "Rural Urban Classification 2011 (2 fold)": "rural_2",
+        }
+    )
+
+    # Add country col
+    rural_df["country"] = rural_df["lsoa_code"].apply(lambda x: x[0])
+
+    return rural_df
+
+
+def get_dwelling_data():
+    """
+    Get total number of dwellings per LSOA.
+
+    Returns:
+        pandas.DataFrame: Total number of dwellings per LSOA.
+    """
+    dwelling_path = os.path.join(
+        input_data_path, config_file["supplementary_data"]["dwelling_data"]
+    )
+
+    dwellings = pd.read_excel(
+        os.path.join(PROJECT_DIR, dwelling_path), sheet_name="1c", skiprows=3
+    )
+    dwellings = dwellings[
+        [
+            "LSOA Code",
+            "Total: All dwellings (excluding communal establishments)",
+            "LSOA Name",
+        ]
+    ]
+    dwellings = dwellings.rename(
+        columns={
+            "LSOA Code": "lsoa_code",
+            "Total: All dwellings (excluding communal establishments)": "total_dwellings",
+            "LSOA Name": "lsoa_name",
+        }
+    )
+
+    return dwellings
+
+
 def get_offgas():
     """Get dataset of off-gas-grid postcodes.
 
@@ -247,7 +317,7 @@ def get_offgas():
     return og
 
 
-def get_rurality():
+def get_rurality_by_oa():
     """Get dataset of postcodes and their rurality indices.
     Two codes are used - the more specific 10-fold code, and the less specific
     two-fold code ("rural"/"urban").
