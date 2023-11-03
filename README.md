@@ -86,6 +86,7 @@ Versions/batches of data used for previous analysis are listed below.
 October 2023 analysis (`/inputs/data/data_202310`):
 
 - EPC: 2023_Q2_complete (preprocessed, and preprocessed and deduplicated)
+- EPC & MCS gold merged: batcgh 231009
 - mcs_installations_231009.csv
 - mcs_installations_epc_full_231009.csv
 - dwellings_2021.xlsx - [Number of dwellings by housing characteristics in England and Wales 2021 (released 30 March 2023)](https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/numberofdwellingsbyhousingcharacteristicsinenglandandwales)
