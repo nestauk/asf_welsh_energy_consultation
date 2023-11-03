@@ -70,6 +70,10 @@ def get_total_cumsums(data, installation_date_col):
     """
     Gets cumulative number of HP installations for Wales.
 
+    Args:
+        data pd.Dataframe: Dataframe of HP installations in Wales.
+        installation_date_col str: Name of column containing HP installation date.
+
     Returns:
         pd.Dataframe containing cumulative number of HP installations for Wales over time.
 
@@ -451,7 +455,7 @@ def get_installations_per_year():
         pandas.DataFrame of MCS installations per year in Wales.
 
     """
-    mcs = get_enhanced_mcs()
+    mcs = get_enhanced_combined(mcs_or_gold="mcs")
     mcs["n"] = 1
     mcs["year"] = pd.to_datetime(mcs["commission_date"]).dt.year
     installations_by_year = mcs.groupby("year")["n"].sum().reset_index()
