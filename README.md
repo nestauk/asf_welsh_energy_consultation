@@ -25,6 +25,7 @@ The remainder of the charts in the response can be produced from code in the rep
   - You can specify which batch of EPC data to download and MCS data to load from S3 by passing the `--epc_batch` and `--mcs_batch` arguments, both
     default to downloading/loading the newest data from S3, respectively.
   - You can specify which supplementary data folder to use by passing the `--supp_data` argument. It defaults to using the latest supplementary data folder.
+  - To recreate the full October 2023 analysis, set the `--calculate_average_installations` argument to `True`. This will calculate some additional numbers on MCS installations per year included in the October 2023 response. For other historical analyses, this argument is not required and defaults to `False`.
   - Run `python asf_welsh_energy_consultation/analysis/produce_plots_and_stats.py -h` for more info.
 
 The script should generate the following seven plots which will be saved in your local repo in `outputs/figures`:
@@ -80,6 +81,7 @@ October 2023 analysis (`/inputs/data/data_202310`):
 - EPC: 2023_Q2_complete (preprocessed, and preprocessed and deduplicated)
 - mcs_installations_231009.csv
 - mcs_installations_epc_full_231009.csv
+- dwellings_2021.xlsx - [Number of dwellings by housing characteristics in England and Wales 2021 (released 30 March 2023)](https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/numberofdwellingsbyhousingcharacteristicsinenglandandwales)
 - off-gas-live-postcodes-2022.xlsx - check [here](https://www.xoserve.com/a-to-z/) for updates
 - postcodes - [ONS Postcode Directory (August 2023)](https://geoportal.statistics.gov.uk/datasets/ons-postcode-directory-august-2023/about)
 - postcode_to_output_area.csv - [postcode to OA, LSOA, MSAO, LAD lookup (May 2022)](https://geoportal.statistics.gov.uk/datasets/e7824b1475604212a2325cd373946235)
@@ -94,6 +96,7 @@ April 2023 analysis (`/inputs/data/data_202304`):
 - off-gas-live-postcodes-2022.xlsx - check [here](https://www.xoserve.com/a-to-z/) for updates
 - rurality.ods - 2011 Rural Urban Classification for small area geographies, see [here](https://www.ons.gov.uk/methodology/geography/geographicalproducts/ruralurbanclassifications)
 - postcodes ; postcode_to_output_area.csv ; tenure.csv - ONS data with unknown source date
+- dwellings data not historically used in this analysis
 
 ## Contributor guidelines
 

@@ -22,7 +22,7 @@ def get_enhanced_mcs():
     mcs = get_data.get_mcs_domestic()
     og = get_data.get_offgas()
     countries = get_data.get_countries()
-    rural = get_data.get_rurality()
+    rural = get_data.get_rurality_by_oa()
 
     # join with off-gas data
     mcs = mcs.merge(og, on="postcode", how="left")
@@ -439,3 +439,122 @@ def generate_age_data(wales_df):
     age_data["cumul_prop"] = age_data["percentage"].cumsum()
 
     return age_data
+
+
+def get_installations_per_year():
+    """
+    Get MCS installations per year for Wales.
+    Returns:
+        pandas.DataFrame of MCS installations per year in Wales.
+
+    """
+    mcs = get_enhanced_mcs()
+    mcs["n"] = 1
+    mcs["year"] = pd.to_datetime(mcs["commission_date"]).dt.year
+    installations_by_year = mcs.groupby("year")["n"].sum().reset_index()
+
+    # Sort by date ascending
+    installations_by_year = installations_by_year.sort_values("year")
+    installations_by_year = installations_by_year.rename(
+        columns={"commission_date": "date"}
+    )
+
+    return installations_by_year
+
+
+def mean_installations_per_year(min_year, max_year):
+    """
+    Get mean average MCS installations in Wales per year for given date range.
+    Args:
+        min_year: Minimum year (exclusive)
+        max_year: Maximum year (exclusive)
+
+    Returns:
+        int: Mean average MCS installations per year.
+    """
+    installations_by_year = get_installations_per_year()
+    subset = installations_by_year[
+        (installations_by_year["year"] > min_year)
+        & (installations_by_year["year"] < max_year)
+    ]
+
+    return subset["n"].mean()
+
+
+def median_installations_per_year(min_year, max_year):
+    """
+    Get median average MCS installations in Wales per year for given date range.
+    Args:
+        min_year: Minimum year (exclusive)
+        max_year: Maximum year (exclusive)
+
+    Returns:
+        int: Median average MCS installations per year.
+    """
+    installations_by_year = get_installations_per_year()
+    subset = installations_by_year[
+        (installations_by_year["year"] > min_year)
+        & (installations_by_year["year"] < max_year)
+    ]
+
+    return subset["n"].median()
+
+
+def get_total_rural_and_urban_properties():
+    """
+    Get total count of properties in Wales in urban vs rural locations.
+
+    Returns:
+        dict: Percent of rural and urban properties in Wales.
+    """
+    rural = get_data.get_rurality()
+    dwellings = get_data.get_dwelling_data()
+
+    df = dwellings.merge(rural, how="left", on="lsoa_code")
+    df = df[df["country"] == "W"]
+    rurality = df.groupby("rural_2")["total_dwellings"].sum().to_dict()
+    rurality_pct_dict = {
+        "Rural": (rurality["Rural"] / (rurality["Rural"] + rurality["Urban"])) * 100,
+        "Urban": (rurality["Urban"] / (rurality["Rural"] + rurality["Urban"])) * 100,
+    }
+
+    return rurality_pct_dict
+
+
+def get_total_on_off_gas_postcodes():
+    """
+    Get total count of postcodes in Wales which are on- vs off-gas.
+
+    Returns:
+        dict: Percent of on- and off-gas postcodes in Wales.
+    """
+
+    og = get_data.get_offgas()
+    postcodes = get_data.get_countries()
+
+    postcodes_og = postcodes.merge(og, how="left", on="postcode")
+
+    # Any postcodes not in off gas dataset have NA values in 'off_gas' col
+    # We assume the remaining postcodes are on gas and fillna with 'on gas'
+    postcodes_og["off_gas"] = postcodes_og["off_gas"].replace({True: "Off gas"})
+    postcodes_og["off_gas"] = postcodes_og["off_gas"].fillna("On gas")
+
+    # Filter for Wales only
+    wales_og = postcodes_og.loc[postcodes_og["country"] == "Wales"].copy()
+
+    # Calculate % of postcodes on and off gas
+    wales_og_dict = wales_og["off_gas"].value_counts(dropna=False).to_dict()
+    wales_postcodes_og_pct_dict = {
+        "Off gas": (
+            wales_og_dict["Off gas"]
+            / (wales_og_dict["Off gas"] + wales_og_dict["On gas"])
+        )
+        * 100,
+        "On gas": (
+            wales_og_dict["On gas"]
+            / (wales_og_dict["Off gas"] + wales_og_dict["On gas"])
+        )
+        * 100,
+    }
+
+    return wales_postcodes_og_pct_dict
