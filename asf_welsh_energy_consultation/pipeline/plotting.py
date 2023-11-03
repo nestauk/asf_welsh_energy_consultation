@@ -71,6 +71,14 @@ def time_series_comparison(
     if domain_max is None:
         domain_max = data.date.max()
         logger.info(f"Time series comparison using {domain_max} as max date")
+
+    # If single variable, remove legend
+    variable = color_var.split(":")[0]
+    if data[variable].nunique() == 1:
+        legend = None
+    else:
+        legend = alt.Legend()
+
     chart = (
         alt.Chart(
             data,
@@ -82,7 +90,7 @@ def time_series_comparison(
                 x_var, title=x_title, scale=alt.Scale(domain=[domain_min, domain_max])
             ),
             y=alt.Y(y_var, title=y_title),
-            color=color_var,
+            color=alt.Color(color_var, legend=legend),
         )
         .properties(width=width, height=height)
     )
