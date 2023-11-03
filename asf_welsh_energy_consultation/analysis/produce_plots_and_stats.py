@@ -105,7 +105,7 @@ if __name__ == "__main__":
     logger.info(f"Saved: {os.path.join(output_folder, 'new_build_hp_proportion.html')}")
 
     # ======================================================
-    # Cumulative number of new builds with heat pumps
+    # Cumulative number of new builds with heat pumps - note: uses EPC data only
 
     new_build_hp_cumulative = process_data.get_new_builds_hp_cumsums()
 
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         alt.Chart(
             new_build_hp_cumulative,
             title=[
-                "Cumulative heat pump installations in new builds with EPC registrations in Wales since 2008",
+                "Cumulative heat pump installations in new builds in Wales since 2008",
             ],
         )
         .mark_line()
@@ -236,7 +236,7 @@ if __name__ == "__main__":
             ]
         )
 
-    # Tenure of Welsh HPs
+    # Tenure of Welsh HPs - uses EPC data only
     proportions_bar_chart(
         wales_hp,
         "TENURE",
@@ -257,7 +257,7 @@ if __name__ == "__main__":
     proportions_bar_chart(
         wales_df.loc[wales_df.CURRENT_ENERGY_RATING != "unknown"],
         "CURRENT_ENERGY_RATING",
-        "EPC ratings of all Welsh EPC-registered properties",
+        "EPC ratings of all EPC-registered Welsh properties",
         "Energy efficiency rating",
         "Percentage of properties",
         filename="epc_all",
