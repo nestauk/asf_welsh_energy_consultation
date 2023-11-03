@@ -1,12 +1,13 @@
 altair==4.2.2
-numpy==1.23.4
-pandas==1.5.1
 altair_viewer==0.4.0
 altair_saver==0.5.0
-matplotlib
-odfpy
-selenium==4.2.0
 argparse==1.4.0
+dask==2023.5.0
+matplotlib==3.7.3
+numpy==1.23.4
+odfpy
+pandas==1.5.1
 s3fs>=2023.3.0
+selenium==4.2.0
 asf_core_data@ git+ssh://git@github.com/nestauk/asf_core_data.git
 nesta_ds_utils@ git+ssh://git@github.com/nestauk/nesta_ds_utils.git
