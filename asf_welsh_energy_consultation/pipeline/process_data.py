@@ -66,7 +66,7 @@ enhanced_mcs = get_enhanced_mcs()
 
 def get_total_cumsums():
     """
-    Gets cumulative MCS installations for Wales.
+    Gets cumulative number of MCS-certified HP installations for Wales.
 
     Returns:
         pd.Dataframe containing cumulative MCS installations for Wales over time.
@@ -75,7 +75,6 @@ def get_total_cumsums():
     mcs = get_enhanced_mcs()
     mcs["n"] = 1
     cumulative_total = mcs.groupby("commission_date")["n"].sum().reset_index()
-    cumulative_total["n"].sum()
 
     # Sort by date ascending
     cumulative_total = cumulative_total.sort_values("commission_date")
