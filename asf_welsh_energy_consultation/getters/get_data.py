@@ -19,99 +19,24 @@ import pandas as pd
 import numpy as np
 import os
 
-from argparse import ArgumentParser
 
-supp_data_dir = config_file["directories"]["supplementary_data_dir"]
-
-
-def create_argparser():
-    """
-    Creates an Argument Parser that can receive the following arguments:
-    - local_data_dir
-    - epc_batch
-    - mcs_batch
-
-    Returns:
-        Argument Parser
-    """
-    parser = ArgumentParser()
-
-    parser.add_argument(
-        "--local_data_dir",
-        help="Local directory where EPC data is/will be stored",
-        type=str,
-    )
-
-    parser.add_argument(
-        "--supp_data",
-        help='Name of directory where supplementary data is stored in the form `data_YYYYMM`. Defaults to "newest"',
-        default="newest",
-        type=str,
-    )
-
-    parser.add_argument(
-        "--epc_batch",
-        help='Specifies which EPC data batch to use in the form `YYYY_[Quarter]_complete`. Defaults to "newest"',
-        default="newest",
-        type=str,
-    )
-
-    parser.add_argument(
-        "--mcs_batch",
-        help="Specifies which MCS installations data batch to use. Only date required in YYMMDD format. "
-        "Defaults to 'newest'",
-        default="newest",
-        type=str,
-    )
-
-    parser.add_argument(
-        "--calculate_average_installations",
-        help="Calculate additional high level statistics specific for October 2023 analysis. Defaults to 'False'",
-        default=False,
-        type=bool,
-    )
-
-    return parser
-
-
-def get_args():
-    """
-    Get arguments from Argument Parser.
-
-    Returns:
-        List of arguments.
-    """
-    parser = create_argparser()
-
-    args = parser.parse_args()
-
-    if args.supp_data == "newest":
-        subdirs = [
-            subdir for subdir in os.listdir(os.path.join(PROJECT_DIR, supp_data_dir))
-        ]
-        args.supp_data = max(subdirs)
-        logger.info(
-            f"Using supplementary folder from the following directory: {os.path.join(PROJECT_DIR, supp_data_dir, max(subdirs))}"
-        )
-
-    return args
-
-
-arguments = get_args()
-LOCAL_DATA_DIR = arguments.local_data_dir
-input_data_path = os.path.join(supp_data_dir, arguments.supp_data)
-wales_epc_path = "wales_epc.csv"
-
-
-def get_mcs_and_joined_data(epc_version):
+def get_mcs_and_joined_data(epc_version, mcs_date):
     """
     Get cleaned MCS data, and cleaned MCS data fully joined with EPC dataset, and cleaned MCS data joined with most recent EPC before HP
     installation or earliest after installation, up to date specified in args.
 
+    Args:
+        epc_version (str): specifies which EPC version is joined to MCS data. One of "none", "full", "newest" or "most_relevant".
+            "none" returns just installation data, "full" returns installation data with
+            each property's entire EPC history attached, "newest" selects the EPC
+            corresponding to the most recent inspection and "most_relevant" selects the
+            most recent EPC from before the HP installation if one exists or the earliest EPC
+            from after the HP installation otherwise. Defaults to "none".
+        mcs_date (str): which MCS installations data batch to use in the form `YYMMDD`.
+
     Returns:
         pandas.DataFrame: specified MCS or MCS-EPC joined dataset.
     """
-    mcs_date = arguments.mcs_batch
 
     # Get latest MCS data or batch specified in args
     if mcs_date == "newest":
@@ -123,13 +48,11 @@ def get_mcs_and_joined_data(epc_version):
     return mcs_data
 
 
-# Get MCS data from S3
-mcs_installations_data = get_mcs_and_joined_data(epc_version="none")
-mcs_installations_epc_full_data = get_mcs_and_joined_data(epc_version="full")
-
-
-def get_countries():
+def get_countries(input_data_path):
     """Get lookup table of postcodes to countries.
+
+    Args:
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         Dataframe: Postcode geographic data.
@@ -193,13 +116,16 @@ def get_countries():
     return postcode_df
 
 
-def get_mcs_domestic():
+def get_mcs_domestic(mcs_date):
     """Get domestic MCS data.
+
+    Args:
+        mcs_date (str): which MCS installations data batch to use in the form `YYMMDD`.
 
     Returns:
         pd.DataFrame: Domestic MCS installation records.
     """
-    mcs = mcs_installations_data
+    mcs = get_mcs_and_joined_data(epc_version="none", mcs_date=mcs_date)
 
     # Older MCS data batches will need this processing step
     # Newer batches have been through this processing step already in the pipeline
@@ -214,9 +140,12 @@ def get_mcs_domestic():
     return mcs_domestic
 
 
-def get_rurality():
+def get_rurality(input_data_path):
     """
     Get rurality df with country code column.
+
+    Args:
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         pandas.DataFrame: Rurality data.
@@ -245,9 +174,12 @@ def get_rurality():
     return rural_df
 
 
-def get_dwelling_data():
+def get_dwelling_data(input_data_path):
     """
     Get total number of dwellings per LSOA.
+
+    Args:
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         pandas.DataFrame: Total number of dwellings per LSOA.
@@ -277,8 +209,11 @@ def get_dwelling_data():
     return dwellings
 
 
-def get_offgas():
+def get_offgas(input_data_path):
     """Get dataset of off-gas-grid postcodes.
+
+    Args:
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         pd.DataFrame: Dataframe containing off-gas postcodes.
@@ -298,10 +233,13 @@ def get_offgas():
     return og
 
 
-def get_rurality_by_oa():
+def get_rurality_by_oa(input_data_path):
     """Get dataset of postcodes and their rurality indices.
     Two codes are used - the more specific 10-fold code, and the less specific
     two-fold code ("rural"/"urban").
+
+    Args:
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         pd.DataFrame: Dataset with postcodes and ruralities.
@@ -351,14 +289,18 @@ def get_rurality_by_oa():
     return oa_rural
 
 
-def check_local_epc(epc_processing_version, download_core_data_epc_version):
+def check_local_epc(epc_batch, epc_processing_version, local_data_dir):
     """
     Checks local directory for relevant EPC batch and downloads relevant EPC batch from S3 to local directory if not found.
+
+    Args:
+        epc_batch (str): which EPC data batch to use in the form `YYYY_QN_complete` or "newest" for latest batch.
+        epc_processing_version (str): which processing version of EPC to use. Either `preprocessed` or `preprocessed_and_deduplicated`
+        local_data_dir (str): path to local data directory where EPC data stored
     """
-    epc_batch = arguments.epc_batch
 
     local_epc_output_dir = os.path.join(
-        LOCAL_DATA_DIR, base_config.OUTPUT_DATA_PATH, "{}"
+        local_data_dir, base_config.OUTPUT_DATA_PATH, "{}"
     )
 
     local_epc_file_path = os.path.join(
@@ -375,33 +317,41 @@ def check_local_epc(epc_processing_version, download_core_data_epc_version):
     if not os.path.exists(local_epc_batch_path) and not os.path.exists(
         os.path.join(local_epc_batch_path, ".zip")
     ):
+        if epc_processing_version == "preprocessed":
+            download_core_data_epc_version = "epc_preprocessed"
+        elif epc_processing_version == "preprocessed_and_deduplicated":
+            download_core_data_epc_version = "epc_preprocessed_dedupl"
+
         logger.info(
             f"EPC data; batch: `{local_epc_batch_path.parts[-2]}`; version: `{epc_processing_version}` not found in "
-            f"local directory: {LOCAL_DATA_DIR}.\n"
-            f"Now downloading from S3 to {LOCAL_DATA_DIR}."
+            f"local directory: {local_data_dir}.\n"
+            f"Now downloading from S3 to {local_data_dir}."
         )
         download_core_data(
             dataset=download_core_data_epc_version,
-            local_dir=LOCAL_DATA_DIR,
+            local_dir=local_data_dir,
             batch=epc_batch,
         )
 
 
-def get_wales_processed_epc():
+def get_wales_processed_epc(epc_batch, local_data_dir):
     """Get Welsh EPC data (processed but not deduplicated).
+
+    Args:
+        epc_batch (str): which EPC data batch to use in the form `YYYY_QN_complete` or "newest" for latest batch.
+        local_data_dir (str): path to local data directory where EPC data stored
 
     Returns:
         pd.DataFrame: Welsh preprocessed EPC data.
     """
     check_local_epc(
+        epc_batch=epc_batch,
         epc_processing_version="preprocessed",
-        download_core_data_epc_version="epc_preprocessed",
+        local_data_dir=local_data_dir,
     )
 
-    epc_batch = arguments.epc_batch
-
     wales_epc = load_preprocessed_epc_data(
-        data_path=LOCAL_DATA_DIR,
+        data_path=local_data_dir,
         usecols=None,
         version="preprocessed",
         subset="Wales",
@@ -411,13 +361,16 @@ def get_wales_processed_epc():
     return wales_epc
 
 
-def get_mcs_epc_domestic():
+def get_mcs_epc_domestic(mcs_date):
     """Get domestic MCS installations joined with EPC data.
+
+    Args:
+        mcs_date (str): which MCS installations data batch to use in the form `YYMMDD`.
 
     Returns:
         pd.DataFrame: Domestic MCS-EPC data.
     """
-    mcs_epc = mcs_installations_epc_full_data
+    mcs_epc = get_mcs_and_joined_data(epc_version="full", mcs_date=mcs_date)
     mcs_epc["commission_date"] = pd.to_datetime(mcs_epc["commission_date"])
     mcs_epc["INSPECTION_DATE"] = pd.to_datetime(mcs_epc["INSPECTION_DATE"])
 
@@ -432,8 +385,11 @@ def get_mcs_epc_domestic():
     return mcs_epc_domestic
 
 
-def get_electric_tenure():
+def get_electric_tenure(input_data_path):
     """Get census data on electric heating vs tenure.
+
+    Args:
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         pd.DataFrame: Dataset of tenure counts for properties on electric heating in Wales.
@@ -477,29 +433,36 @@ def get_electric_tenure():
     return data
 
 
-def load_wales_df(from_csv=True):
+def load_wales_df(
+    epc_batch, local_data_dir, input_data_path, wales_epc_path, from_csv=True
+):
     """Load preprocessed and deduplicated EPC dataset for Wales.
     If data is loaded from all-GB file, the filtered version is saved to csv
     for easier future loading.
 
     Args:
-        from_csv (bool, optional): Whether to load from saved CSV. Defaults to True.
+        epc_batch (str): which EPC data batch to use in the form `YYYY_QN_complete` or "newest" for latest batch.
+        local_data_dir (str): path to local data directory where EPC data stored
+        input_data_path (str): path to supplementary data directory
+        wales_epc_path (str): path to save EPC data filtered for Wales to.
+        from_csv (bool, optional): Whether to load Wales subset from saved CSV. Defaults to True.
 
     Returns:
-        pd.DataFrame: EPC data.
+        pd.DataFrame: EPC data for Wales.
     """
     if from_csv:
         wales_epc = pd.read_csv(wales_epc_path)
     else:
         check_local_epc(
+            epc_batch=epc_batch,
             epc_processing_version="preprocessed_and_deduplicated",
-            download_core_data_epc_version="epc_preprocessed_dedupl",
+            local_data_dir=local_data_dir,
         )
-        batch = arguments.epc_batch
+
         wales_epc = load_preprocessed_epc_data(
-            data_path=LOCAL_DATA_DIR,
+            data_path=local_data_dir,
             subset="Wales",
-            batch=batch,
+            batch=epc_batch,
             version="preprocessed_dedupl",
             usecols=[
                 "LMK_KEY",

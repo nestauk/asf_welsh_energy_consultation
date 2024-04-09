@@ -6,7 +6,9 @@ Script to produce plots.
 import altair as alt
 import os
 import logging
+from argparse import ArgumentParser
 
+from asf_welsh_energy_consultation import PROJECT_DIR
 from asf_welsh_energy_consultation import config_file
 from asf_welsh_energy_consultation.config import translation_config
 from asf_welsh_energy_consultation.getters import get_data
@@ -32,11 +34,102 @@ if not os.path.isdir(output_folder):
     os.makedirs(output_folder)
 
 
+def create_argparser():
+    """
+    Creates an Argument Parser that can receive the following arguments:
+    - local_data_dir
+    - epc_batch
+    - mcs_batch
+
+    Returns:
+        Argument Parser
+    """
+    parser = ArgumentParser()
+
+    parser.add_argument(
+        "--local_data_dir",
+        help="Local directory where EPC data is/will be stored",
+        type=str,
+    )
+
+    parser.add_argument(
+        "--supp_data",
+        help='Name of directory where supplementary data is stored in the form `data_YYYYMM`. Defaults to "newest"',
+        default="newest",
+        type=str,
+    )
+
+    parser.add_argument(
+        "--epc_batch",
+        help='Specifies which EPC data batch to use in the form `YYYY_[Quarter]_complete`. Defaults to "newest"',
+        default="newest",
+        type=str,
+    )
+
+    parser.add_argument(
+        "--mcs_batch",
+        help="Specifies which MCS installations data batch to use. Only date required in YYMMDD format. "
+        "Defaults to 'newest'",
+        default="newest",
+        type=str,
+    )
+
+    parser.add_argument(
+        "--calculate_average_installations",
+        help="Calculate additional high level statistics specific for October 2023 analysis. Defaults to 'False'",
+        default=False,
+        type=bool,
+    )
+
+    return parser
+
+
+def get_args(project_dir, supp_data_dir):
+    """
+    Get arguments from Argument Parser.
+
+    Args:
+        project_dir (str): path to local project directory
+        supp_data_dir (str): relative path to directory containing supplementary data directories
+
+    Returns:
+        List of arguments.
+    """
+    parser = create_argparser()
+
+    args = parser.parse_args()
+
+    if args.supp_data == "newest":
+        subdirs = [
+            subdir for subdir in os.listdir(os.path.join(project_dir, supp_data_dir))
+        ]
+        args.supp_data = max(subdirs)
+        logger.info(
+            f"Using supplementary folder from the following directory: {os.path.join(project_dir, supp_data_dir, max(subdirs))}"
+        )
+
+    return args
+
+
 if __name__ == "__main__":
+    supp_dir = config_file["directories"]["supplementary_data_dir"]
+    arguments = get_args(project_dir=PROJECT_DIR, supp_data_dir=supp_dir)
+
+    # Set file paths
+    local_data_dir = arguments.local_data_dir
+    input_data_path = os.path.join(supp_dir, arguments.supp_data)
+    wales_epc_path = "wales_epc.csv"
+
+    # Set params
+    epc_batch = arguments.epc_batch
+    mcs_date = arguments.mcs_batch
+
     # ======================================================
     # MCS installations, by off-gas status
 
-    total_cumulative_installations = process_data.get_total_cumsums()
+    total_cumulative_installations = process_data.get_total_cumsums(
+        mcs_date=mcs_date, input_data_path=input_data_path
+    )
 
     total_cumulative_installations_chart = time_series_comparison(
         data=total_cumulative_installations,
@@ -51,8 +144,11 @@ if __name__ == "__main__":
     # ======================================================
     # MCS installations, by off-gas status
 
+    enhanced_mcs = process_data.get_enhanced_mcs(
+        mcs_date=mcs_date, input_data_path=input_data_path
+    )
     installations_by_gas_status = process_data.cumsums_by_variable(
-        "off_gas", "Gas status"
+        "off_gas", "Gas status", data=enhanced_mcs
     )
 
     installations_by_gas_status_chart = time_series_comparison(
@@ -72,7 +168,7 @@ if __name__ == "__main__":
     # MCS installations, by rurality
 
     installations_by_rurality = process_data.cumsums_by_variable(
-        "rurality_2_label", "Rurality"
+        "rurality_2_label", "Rurality", data=enhanced_mcs
     )
 
     installations_by_rurality_chart = time_series_comparison(
@@ -92,7 +188,9 @@ if __name__ == "__main__":
     # ======================================================
     # Proportions of new builds that have heat pumps
 
-    new_build_hp_proportion = process_data.get_new_builds_hp_counts()
+    new_build_hp_proportion = process_data.get_new_builds_hp_counts(
+        epc_batch=epc_batch, local_data_dir=local_data_dir
+    )
     max_date = new_build_hp_proportion["year"].max()
 
     new_build_hp_proportion_chart = (
@@ -122,7 +220,9 @@ if __name__ == "__main__":
     # ======================================================
     # Cumulative number of new builds with heat pumps - note: uses EPC data only
 
-    new_build_hp_cumulative = process_data.get_new_builds_hp_cumsums()
+    new_build_hp_cumulative = process_data.get_new_builds_hp_cumsums(
+        epc_batch=epc_batch, local_data_dir=local_data_dir
+    )
 
     new_build_hp_cumulative_chart = (
         alt.Chart(
@@ -146,7 +246,9 @@ if __name__ == "__main__":
     # ======================================================
     # Cumulative MCS retrofits
 
-    mcs_retrofits = process_data.get_mcs_retrofits()
+    mcs_retrofits = process_data.get_mcs_retrofits(
+        mcs_date=mcs_date, input_data_path=input_data_path
+    )
     mcs_retrofit_cumsums = process_data.cumsums_by_variable(
         "country", "wales_col", data=mcs_retrofits
     )
@@ -178,7 +280,7 @@ if __name__ == "__main__":
     # ======================================================
     # Split of properties on electric heating by tenure
 
-    electric_tenure = get_data.get_electric_tenure()
+    electric_tenure = get_data.get_electric_tenure(input_data_path=input_data_path)
     N = electric_tenure["n"].sum()
 
     electric_tenure_chart = (
@@ -204,9 +306,17 @@ if __name__ == "__main__":
     # ======================================================
     # Original plots and stats
 
-    wales_df = load_wales_df(from_csv=False)
+    wales_df = load_wales_df(
+        epc_batch=epc_batch,
+        local_data_dir=local_data_dir,
+        input_data_path=input_data_path,
+        wales_epc_path=wales_epc_path,
+        from_csv=False,
+    )
     wales_hp = load_wales_hp(wales_df)
-    wales_mcs = process_data.get_enhanced_mcs()
+    wales_mcs = process_data.get_enhanced_mcs(
+        mcs_date=mcs_date, input_data_path=input_data_path
+    )
 
     # English plots
 
@@ -254,9 +364,13 @@ if __name__ == "__main__":
     )
 
     percent_properties_by_rurality = str(
-        process_data.get_total_rural_and_urban_properties()
+        process_data.get_total_rural_and_urban_properties(
+            input_data_path=input_data_path
+        )
     )
-    percent_postcodes_by_gas = str(process_data.get_total_on_off_gas_postcodes())
+    percent_postcodes_by_gas = str(
+        process_data.get_total_on_off_gas_postcodes(input_data_path=input_data_path)
+    )
 
     with open(os.path.join(output_folder, "stats.txt"), "w") as stats_txt:
         stats_txt.writelines(
@@ -280,18 +394,28 @@ if __name__ == "__main__":
         )
 
     # To recreate October 2023 analysis
-    if get_data.get_args().calculate_average_installations:
-        subset_year_a_mean = process_data.mean_installations_per_year(2015, 2021)
-        subset_year_a_median = process_data.median_installations_per_year(2015, 2021)
+    if get_args(
+        project_dir=PROJECT_DIR, supp_data_dir=supp_dir
+    ).calculate_average_installations:
+        subset_year_a_mean = process_data.mean_installations_per_year(
+            2015, 2021, mcs_date=mcs_date, input_data_path=input_data_path
+        )
+        subset_year_a_median = process_data.median_installations_per_year(
+            2015, 2021, mcs_date=mcs_date, input_data_path=input_data_path
+        )
         subset_year_a_text = (
             f"\n\nMean number of MCS installations in Wales per year from 2016-2020: {subset_year_a_mean}."
             f"\nMedian number of MCS installations in Wales per year from 2016-2020: {subset_year_a_median}."
         )
 
-        subset_year_b_mean = process_data.mean_installations_per_year(2020, 2023)
+        subset_year_b_mean = process_data.mean_installations_per_year(
+            2020, 2023, mcs_date=mcs_date, input_data_path=input_data_path
+        )
         subset_year_b_text = f"\nMean number of MCS installations in Wales per year from 2021-2022: {subset_year_b_mean}."
 
-        installations_df = process_data.get_installations_per_year()
+        installations_df = process_data.get_installations_per_year(
+            mcs_date=mcs_date, input_data_path=input_data_path
+        )
         # Get single value for installations in 2023
         installations_2023 = installations_df[installations_df["year"] == 2023][
             "n"
