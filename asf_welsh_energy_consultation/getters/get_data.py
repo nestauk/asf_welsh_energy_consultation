@@ -27,7 +27,7 @@ def get_mcs_and_joined_data(epc_version, mcs_date):
 
     Args:
         epc_version (str): specifies which EPC version is joined to MCS data. One of "none", "full", "newest" or "most_relevant".
-            "none" returns just installation data, "full" returns installation data with
+            "none" returns just MCS installation data, "full" returns MCS installation data with
             each property's entire EPC history attached, "newest" selects the EPC
             corresponding to the most recent inspection and "most_relevant" selects the
             most recent EPC from before the HP installation if one exists or the earliest EPC

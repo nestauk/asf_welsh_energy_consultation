@@ -40,6 +40,8 @@ def create_argparser():
     - local_data_dir
     - epc_batch
     - mcs_batch
+    - supp_data
+    - calculate_average_installations
 
     Returns:
         Argument Parser
@@ -54,7 +56,7 @@ def create_argparser():
 
     parser.add_argument(
         "--supp_data",
-        help='Name of directory where supplementary data is stored in the form `data_YYYYMM`. Defaults to "newest"',
+        help='Name of subdirectory where supplementary data is stored in the form `data_YYYYMM`. Defaults to "newest"',
         default="newest",
         type=str,
     )
@@ -117,7 +119,7 @@ if __name__ == "__main__":
 
     # Set file paths
     local_data_dir = arguments.local_data_dir
-    input_data_path = os.path.join(supp_dir, arguments.supp_data)
+    supp_data_path = os.path.join(supp_dir, arguments.supp_data)
     wales_epc_path = "wales_epc.csv"
 
     # Set params
@@ -125,10 +127,10 @@ if __name__ == "__main__":
     mcs_date = arguments.mcs_batch
 
     # ======================================================
-    # MCS installations, by off-gas status
+    # Total cumulative MCS installations
 
     total_cumulative_installations = process_data.get_total_cumsums(
-        mcs_date=mcs_date, input_data_path=input_data_path
+        mcs_date=mcs_date, input_data_path=supp_data_path
     )
 
     total_cumulative_installations_chart = time_series_comparison(
@@ -145,7 +147,7 @@ if __name__ == "__main__":
     # MCS installations, by off-gas status
 
     enhanced_mcs = process_data.get_enhanced_mcs(
-        mcs_date=mcs_date, input_data_path=input_data_path
+        mcs_date=mcs_date, input_data_path=supp_data_path
     )
     installations_by_gas_status = process_data.cumsums_by_variable(
         "off_gas", "Gas status", data=enhanced_mcs
@@ -247,7 +249,7 @@ if __name__ == "__main__":
     # Cumulative MCS retrofits
 
     mcs_retrofits = process_data.get_mcs_retrofits(
-        mcs_date=mcs_date, input_data_path=input_data_path
+        mcs_date=mcs_date, input_data_path=supp_data_path
     )
     mcs_retrofit_cumsums = process_data.cumsums_by_variable(
         "country", "wales_col", data=mcs_retrofits
@@ -280,7 +282,7 @@ if __name__ == "__main__":
     # ======================================================
     # Split of properties on electric heating by tenure
 
-    electric_tenure = get_data.get_electric_tenure(input_data_path=input_data_path)
+    electric_tenure = get_data.get_electric_tenure(input_data_path=supp_data_path)
     N = electric_tenure["n"].sum()
 
     electric_tenure_chart = (
@@ -309,13 +311,13 @@ if __name__ == "__main__":
     wales_df = load_wales_df(
         epc_batch=epc_batch,
         local_data_dir=local_data_dir,
-        input_data_path=input_data_path,
+        input_data_path=supp_data_path,
         wales_epc_path=wales_epc_path,
         from_csv=False,
     )
     wales_hp = load_wales_hp(wales_df)
     wales_mcs = process_data.get_enhanced_mcs(
-        mcs_date=mcs_date, input_data_path=input_data_path
+        mcs_date=mcs_date, input_data_path=supp_data_path
     )
 
     # English plots
@@ -365,11 +367,11 @@ if __name__ == "__main__":
 
     percent_properties_by_rurality = str(
         process_data.get_total_rural_and_urban_properties(
-            input_data_path=input_data_path
+            input_data_path=supp_data_path
         )
     )
     percent_postcodes_by_gas = str(
-        process_data.get_total_on_off_gas_postcodes(input_data_path=input_data_path)
+        process_data.get_total_on_off_gas_postcodes(input_data_path=supp_data_path)
     )
 
     with open(os.path.join(output_folder, "stats.txt"), "w") as stats_txt:
@@ -394,14 +396,12 @@ if __name__ == "__main__":
         )
 
     # To recreate October 2023 analysis
-    if get_args(
-        project_dir=PROJECT_DIR, supp_data_dir=supp_dir
-    ).calculate_average_installations:
+    if arguments.calculate_average_installations:
         subset_year_a_mean = process_data.mean_installations_per_year(
-            2015, 2021, mcs_date=mcs_date, input_data_path=input_data_path
+            2015, 2021, mcs_date=mcs_date, input_data_path=supp_data_path
         )
         subset_year_a_median = process_data.median_installations_per_year(
-            2015, 2021, mcs_date=mcs_date, input_data_path=input_data_path
+            2015, 2021, mcs_date=mcs_date, input_data_path=supp_data_path
         )
         subset_year_a_text = (
             f"\n\nMean number of MCS installations in Wales per year from 2016-2020: {subset_year_a_mean}."
@@ -409,12 +409,12 @@ if __name__ == "__main__":
         )
 
         subset_year_b_mean = process_data.mean_installations_per_year(
-            2020, 2023, mcs_date=mcs_date, input_data_path=input_data_path
+            2020, 2023, mcs_date=mcs_date, input_data_path=supp_data_path
         )
         subset_year_b_text = f"\nMean number of MCS installations in Wales per year from 2021-2022: {subset_year_b_mean}."
 
         installations_df = process_data.get_installations_per_year(
-            mcs_date=mcs_date, input_data_path=input_data_path
+            mcs_date=mcs_date, input_data_path=supp_data_path
         )
         # Get single value for installations in 2023
         installations_2023 = installations_df[installations_df["year"] == 2023][
