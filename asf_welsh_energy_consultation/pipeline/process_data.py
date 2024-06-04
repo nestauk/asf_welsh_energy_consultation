@@ -13,16 +13,20 @@ logger = logging.getLogger(__name__)
 # PROCESSING MCS
 
 
-def get_enhanced_mcs():
+def get_enhanced_mcs(mcs_date, input_data_path):
     """Get dataset of domestic MCS installations with attached off-gas, country and rurality fields.
+
+    Args:
+        mcs_date (str): which MCS installations data batch to use in the form `YYMMDD`.
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         pd.DataFrame: Dataset as described above.
     """
-    mcs = get_data.get_mcs_domestic()
-    og = get_data.get_offgas()
-    countries = get_data.get_countries()
-    rural = get_data.get_rurality_by_oa()
+    mcs = get_data.get_mcs_domestic(mcs_date=mcs_date)
+    og = get_data.get_offgas(input_data_path=input_data_path)
+    countries = get_data.get_countries(input_data_path=input_data_path)
+    rural = get_data.get_rurality_by_oa(input_data_path=input_data_path)
 
     # join with off-gas data
     mcs = mcs.merge(og, on="postcode", how="left")
@@ -60,19 +64,19 @@ def get_enhanced_mcs():
     return mcs
 
 
-# load enhanced MCS as part of this script, so only needs to be done once
-enhanced_mcs = get_enhanced_mcs()
-
-
-def get_total_cumsums():
+def get_total_cumsums(mcs_date, input_data_path):
     """
     Gets cumulative number of MCS-certified HP installations for Wales.
 
+    Args:
+        mcs_date (str): which MCS installations data batch to use in the form `YYMMDD`.
+        input_data_path (str): path to supplementary data directory
+
     Returns:
-        pd.Dataframe containing cumulative MCS installations for Wales over time.
+        pd.Dataframe: containing cumulative MCS installations for Wales over time.
 
     """
-    mcs = get_enhanced_mcs()
+    mcs = get_enhanced_mcs(mcs_date=mcs_date, input_data_path=input_data_path)
     mcs["n"] = 1
     cumulative_total = mcs.groupby("commission_date")["n"].sum().reset_index()
 
@@ -90,17 +94,17 @@ def get_total_cumsums():
     return cumulative_total
 
 
-def cumsums_by_variable(variable, new_var_name, data=enhanced_mcs):
+def cumsums_by_variable(variable, new_var_name, data):
     """Process data into a form giving the cumulative total of
     installations on each date for each category of a variable.
 
     Args:
         variable (str): Variable to split by.
         new_var_name (str): Name of variable in processed dataset.
-        data (pd.DataFrame, optional): Base data. Defaults to enhanced_mcs.
+        data (pd.DataFrame): dataset containing variable to calculate cumulative totals for
 
     Returns:
-        pd.DataFrame: Cumulative totals dataset.
+        pd.DataFrame: dataset of cumulative totals.
     """
 
     # calculate total number of installations for each date/category pair
@@ -138,15 +142,21 @@ def cumsums_by_variable(variable, new_var_name, data=enhanced_mcs):
 # PROCESSING EPC
 
 
-def correct_new_dwelling_labels():
+def correct_new_dwelling_labels(epc_batch, local_data_dir):
     """
-    For each unique property in the pandas DataFrame that has more than one record where `TRANSACTION_TYPE == "new dwelling"`,
+    For each unique property in the DataFrame that has more than one record where `TRANSACTION_TYPE == "new dwelling"`,
     replace "new dwelling" with "unknown" for each row except the row with the earliest date.
 
+    Args:
+        epc_batch (str): which EPC data batch to use in the form `YYYY_QN_complete` or "newest" for latest batch.
+        local_data_dir (str): path to local data directory where EPC data stored
+
     Returns:
-        pd.DataFrame: Wales EPC certificates
+        pd.DataFrame: Wales EPC data with corrected `TRANSACTION_TYPE` for new dwellings
     """
-    wales_epc = get_data.get_wales_processed_epc()
+    wales_epc = get_data.get_wales_processed_epc(
+        epc_batch=epc_batch, local_data_dir=local_data_dir
+    )
     wales_epc["rank"] = wales_epc.groupby("UPRN")["INSPECTION_DATE"].rank(
         "dense", na_option="bottom"
     )
@@ -161,13 +171,19 @@ def correct_new_dwelling_labels():
     return df
 
 
-def get_wales_new_builds_epc():
+def get_wales_new_builds_epc(epc_batch, local_data_dir):
     """Get first EPC certificates for any property labelled as "new dwelling".
 
+    Args:
+        epc_batch (str): which EPC data batch to use in the form `YYYY_QN_complete` or "newest" for latest batch.
+        local_data_dir (str): path to local data directory where EPC data stored
+
     Returns:
-        pd.DataFrame: New build EPC certificates.
+        pd.DataFrame: EPC data filtered to new builds only.
     """
-    wales_epc_new = correct_new_dwelling_labels()
+    wales_epc_new = correct_new_dwelling_labels(
+        epc_batch=epc_batch, local_data_dir=local_data_dir
+    )
 
     wales_epc_new = (
         wales_epc_new.loc[wales_epc_new["TRANSACTION_TYPE"] == "new dwelling"][
@@ -185,13 +201,19 @@ def get_wales_new_builds_epc():
     return wales_epc_new
 
 
-def get_new_builds_hp_counts():
+def get_new_builds_hp_counts(epc_batch, local_data_dir):
     """Get counts of new builds with HPs for each year.
+
+    Args:
+        epc_batch (str): which EPC data batch to use in the form `YYYY_QN_complete` or "newest" for latest batch.
+        local_data_dir (str): path to local data directory where EPC data stored
 
     Returns:
         pd.DataFrame: New build HP counts.
     """
-    wales_epc_new = get_wales_new_builds_epc()
+    wales_epc_new = get_wales_new_builds_epc(
+        epc_batch=epc_batch, local_data_dir=local_data_dir
+    )
     # Requires full year of data so remove most recent year if it doesn't have 12 months of data
     wales_epc_new["INSPECTION_DATE"] = pd.to_datetime(wales_epc_new["INSPECTION_DATE"])
     max_date = wales_epc_new["INSPECTION_DATE"].max()
@@ -227,13 +249,19 @@ def get_new_builds_hp_counts():
     return new_hp_counts
 
 
-def get_new_builds_hp_cumsums():
+def get_new_builds_hp_cumsums(epc_batch, local_data_dir):
     """Get cumulative total of new build HPs.
+
+    Args:
+        epc_batch (str): which EPC data batch to use in the form `YYYY_QN_complete` or "newest" for latest batch.
+        local_data_dir (str): path to local data directory where EPC data stored
 
     Returns:
         pd.DataFrame: New build HPs cumulative totals.
     """
-    wales_epc_new = get_wales_new_builds_epc()
+    wales_epc_new = get_wales_new_builds_epc(
+        epc_batch=epc_batch, local_data_dir=local_data_dir
+    )
 
     new_hps = wales_epc_new.loc[wales_epc_new["HP_INSTALLED"]].reset_index(drop=True)
     new_hps_sums = (
@@ -254,16 +282,19 @@ def get_new_builds_hp_cumsums():
     return new_hps_cumsums
 
 
-def identify_mcs_with_multiple_epc():
+def identify_mcs_with_multiple_epc(mcs_date):
     """
     Creates a list of UPRNs that appear more than once in the MCS-EPC `most_relevant` dataset. UPRNs that appear more than once
     indicate a single MCS installation joined to multiple EPC records.
+
+    Args:
+        mcs_date (str): which MCS installations data batch to use in the form `YYMMDD`.
 
     Returns:
         List of duplicate UPRNs.
     """
     mcs_epc_most_relevant = get_data.get_mcs_and_joined_data(
-        epc_version="most_relevant"
+        epc_version="most_relevant", mcs_date=mcs_date
     )
     mcs_epc_most_relevant["count"] = 1
     uprn_count = mcs_epc_most_relevant.groupby(["UPRN"])["count"].sum().reset_index()
@@ -297,21 +328,25 @@ def add_unique_mcs_id(df):
     return df
 
 
-def mcs_epc_first_records():
+def mcs_epc_first_records(mcs_date, input_data_path):
     """Get first records from fully joined MCS-EPC dataset. Note: all rows with UPRNs associated with multiple MCS installations
     in the dataset are removed to avoid double counting.
+
+    Args:
+        mcs_date (str): which MCS installations data batch to use in the form `YYMMDD`.
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         pd.DataFrame: MCS records joined with first EPC.
     """
-    mcs_epc = get_data.get_mcs_epc_domestic()
-    duplicate_uprns = identify_mcs_with_multiple_epc()
+    mcs_epc = get_data.get_mcs_epc_domestic(mcs_date=mcs_date)
+    duplicate_uprns = identify_mcs_with_multiple_epc(mcs_date=mcs_date)
     logger.warning(
         f"{len(duplicate_uprns)} duplicate UPRNs identified. Removing all rows with a duplicate UPRN from MCS-EPC fully joined dataset."
     )
     mcs_epc = mcs_epc.loc[~mcs_epc.UPRN.isin(duplicate_uprns)]
 
-    regions = get_data.get_countries()
+    regions = get_data.get_countries(input_data_path=input_data_path)
 
     mcs_epc = mcs_epc.merge(regions, on="postcode", how="left")
     if mcs_epc.country.isna().sum() > 0:
@@ -357,13 +392,19 @@ def add_hp_when_built_column(first_records):
     return first_records
 
 
-def get_mcs_retrofits():
+def get_mcs_retrofits(mcs_date, input_data_path):
     """Get dataset of MCS installations assumed to be retrofits (domestic and EPC indicates no HP when built or not joined to EPC)
+
+    Args:
+        mcs_date (str): which MCS installations data batch to use in the form `YYMMDD`.
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         pd.DataFrame: MCS retrofit records.
     """
-    first_records = mcs_epc_first_records()
+    first_records = mcs_epc_first_records(
+        mcs_date=mcs_date, input_data_path=input_data_path
+    )
     first_records = add_hp_when_built_column(first_records)
 
     hp_when_built_indices = first_records.loc[first_records["assumed_hp_when_built"]][
@@ -373,7 +414,7 @@ def get_mcs_retrofits():
     # this makes sense because if they had been built with a HP we would expect them to appear in EPC
     # due to new build EPC requirements
 
-    enhanced_mcs = get_enhanced_mcs()
+    enhanced_mcs = get_enhanced_mcs(mcs_date=mcs_date, input_data_path=input_data_path)
     enhanced_mcs = add_unique_mcs_id(enhanced_mcs)
     mcs_retrofits = enhanced_mcs.loc[
         ~enhanced_mcs["unique_id"].isin(hp_when_built_indices)
@@ -441,14 +482,19 @@ def generate_age_data(wales_df):
     return age_data
 
 
-def get_installations_per_year():
+def get_installations_per_year(mcs_date, input_data_path):
     """
     Get MCS installations per year for Wales.
+
+    Args:
+        mcs_date (str): which MCS installations data batch to use in the form `YYMMDD`.
+        input_data_path (str): path to supplementary data directory
+
     Returns:
         pandas.DataFrame of MCS installations per year in Wales.
 
     """
-    mcs = get_enhanced_mcs()
+    mcs = get_enhanced_mcs(mcs_date=mcs_date, input_data_path=input_data_path)
     mcs["n"] = 1
     mcs["year"] = pd.to_datetime(mcs["commission_date"]).dt.year
     installations_by_year = mcs.groupby("year")["n"].sum().reset_index()
@@ -462,17 +508,22 @@ def get_installations_per_year():
     return installations_by_year
 
 
-def mean_installations_per_year(min_year, max_year):
+def mean_installations_per_year(min_year, max_year, mcs_date, input_data_path):
     """
     Get mean average MCS installations in Wales per year for given date range.
+
     Args:
         min_year: Minimum year (exclusive)
         max_year: Maximum year (exclusive)
+        mcs_date (str): which MCS installations data batch to use in the form `YYMMDD`.
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         int: Mean average MCS installations per year.
     """
-    installations_by_year = get_installations_per_year()
+    installations_by_year = get_installations_per_year(
+        mcs_date=mcs_date, input_data_path=input_data_path
+    )
     subset = installations_by_year[
         (installations_by_year["year"] > min_year)
         & (installations_by_year["year"] < max_year)
@@ -481,17 +532,21 @@ def mean_installations_per_year(min_year, max_year):
     return subset["n"].mean()
 
 
-def median_installations_per_year(min_year, max_year):
+def median_installations_per_year(min_year, max_year, mcs_date, input_data_path):
     """
     Get median average MCS installations in Wales per year for given date range.
     Args:
         min_year: Minimum year (exclusive)
         max_year: Maximum year (exclusive)
+        mcs_date (str): which MCS installations data batch to use in the form `YYMMDD`.
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         int: Median average MCS installations per year.
     """
-    installations_by_year = get_installations_per_year()
+    installations_by_year = get_installations_per_year(
+        mcs_date=mcs_date, input_data_path=input_data_path
+    )
     subset = installations_by_year[
         (installations_by_year["year"] > min_year)
         & (installations_by_year["year"] < max_year)
@@ -500,15 +555,18 @@ def median_installations_per_year(min_year, max_year):
     return subset["n"].median()
 
 
-def get_total_rural_and_urban_properties():
+def get_total_rural_and_urban_properties(input_data_path):
     """
     Get total count of properties in Wales in urban vs rural locations.
+
+    Args:
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         dict: Percent of rural and urban properties in Wales.
     """
-    rural = get_data.get_rurality()
-    dwellings = get_data.get_dwelling_data()
+    rural = get_data.get_rurality(input_data_path=input_data_path)
+    dwellings = get_data.get_dwelling_data(input_data_path=input_data_path)
 
     df = dwellings.merge(rural, how="left", on="lsoa_code")
     df = df[df["country"] == "W"]
@@ -521,16 +579,19 @@ def get_total_rural_and_urban_properties():
     return rurality_pct_dict
 
 
-def get_total_on_off_gas_postcodes():
+def get_total_on_off_gas_postcodes(input_data_path):
     """
     Get total count of postcodes in Wales which are on- vs off-gas.
+
+    Args:
+        input_data_path (str): path to supplementary data directory
 
     Returns:
         dict: Percent of on- and off-gas postcodes in Wales.
     """
 
-    og = get_data.get_offgas()
-    postcodes = get_data.get_countries()
+    og = get_data.get_offgas(input_data_path=input_data_path)
+    postcodes = get_data.get_countries(input_data_path=input_data_path)
 
     postcodes_og = postcodes.merge(og, how="left", on="postcode")
 
