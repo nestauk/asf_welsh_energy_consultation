@@ -3,9 +3,19 @@ plots:
 directories:
   supplementary_data_dir: "inputs/data"
 supplementary_data:
-  postcode_dir: "postcodes"
-  off_gas_data: "off-gas-live-postcodes-2022.xlsx"
-  postcode_to_oa_data: "postcode_to_output_area.csv"
-  rurality_data: "rurality.ods"
-  tenure_data: "tenure.csv"
-  dwelling_data: "dwellings_2021.xlsx"
+  data_202411:
+    postcode_dir: "ONSPD_FEB_2024_UK.csv"
+    off_gas_data: "off_gas_postcode_register_sept_2024.xlsx"
+    off_gas_sheet: "Off-Gas Postcodes 2024"
+    postcode_to_oa_data: "PCD_OA21_LSOA21_MSOA21_LAD_FEB24_UK_LU.csv"
+    rurality_data: "rurality.ods"
+    tenure_data: "tenure.csv"
+    dwelling_data: "dwellings_2021.xlsx"
+  data_202304:
+    postcode_dir: "postcodes"
+    off_gas_data: "off-gas-live-postcodes-2022.xlsx"
+    off_gas_sheet: "Off Gas Live PostCodes 22"
+    postcode_to_oa_data: "postcode_to_output_area.csv"
+    rurality_data: "rurality.ods"
+    tenure_data: "tenure.csv"
+    dwelling_data: "dwellings_2021.xlsx"
