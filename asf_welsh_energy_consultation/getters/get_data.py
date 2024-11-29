@@ -57,37 +57,46 @@ def get_countries(input_data_path):
     Returns:
         Dataframe: Postcode geographic data.
     """
+    data_edition = input_data_path.split("/")[-1]
     # Read postcode data
     postcode_path = os.path.join(
-        input_data_path, config_file["supplementary_data"]["postcode_dir"]
+        input_data_path, config_file["supplementary_data"][data_edition]["postcode_dir"]
     )
-    postcode_folder = PROJECT_DIR / postcode_path
-    files = os.listdir(postcode_folder)
-    try:
-        postcode_df = pd.concat(
-            # Only need postcode and LA code cols
-            (
-                pd.read_csv(os.path.join(postcode_folder, file), header=0)[
-                    ["pcd", "osward"]
-                ]
-                for file in files
-            ),
-            ignore_index=True,
-        )
+
+    # From 202411 analysis, we use the full postcode directory rather than the partitioned files
+    if data_edition > "data_202310":
+        postcode_df = pd.read_csv(os.path.join(PROJECT_DIR, postcode_path))
         postcode_df = postcode_df.rename(
             columns={"pcd": "postcode", "osward": "la_code"}
         )
+    else:  # 202310 or 202304 analysis
+        postcode_folder = PROJECT_DIR / postcode_path
+        files = os.listdir(postcode_folder)
+        try:
+            postcode_df = pd.concat(
+                # Only need postcode and LA code cols
+                (
+                    pd.read_csv(os.path.join(postcode_folder, file), header=0)[
+                        ["pcd", "osward"]
+                    ]
+                    for file in files
+                ),
+                ignore_index=True,
+            )
+            postcode_df = postcode_df.rename(
+                columns={"pcd": "postcode", "osward": "la_code"}
+            )
 
-    except KeyError:  # Older data has no col names so use col numbers
-        postcode_df = pd.concat(
-            # Only need postcode and LA code cols
-            (
-                pd.read_csv(postcode_folder / file, header=None)[[0, 8]]
-                for file in files
-            ),
-            ignore_index=True,
-        )
-        postcode_df = postcode_df.rename(columns={0: "postcode", 8: "la_code"})
+        except KeyError:  # Older data has no col names so use col numbers
+            postcode_df = pd.concat(
+                # Only need postcode and LA code cols
+                (
+                    pd.read_csv(postcode_folder / file, header=None)[[0, 8]]
+                    for file in files
+                ),
+                ignore_index=True,
+            )
+            postcode_df = postcode_df.rename(columns={0: "postcode", 8: "la_code"})
 
     postcode_df["postcode"] = postcode_df["postcode"].str.replace(" ", "")
 
@@ -150,8 +159,10 @@ def get_rurality(input_data_path):
     Returns:
         pandas.DataFrame: Rurality data.
     """
+    data_edition = input_data_path.split("/")[-1]
     rural_path = os.path.join(
-        input_data_path, config_file["supplementary_data"]["rurality_data"]
+        input_data_path,
+        config_file["supplementary_data"][data_edition]["rurality_data"],
     )
 
     rural_df = pd.read_excel(
@@ -184,8 +195,10 @@ def get_dwelling_data(input_data_path):
     Returns:
         pandas.DataFrame: Total number of dwellings per LSOA.
     """
+    data_edition = input_data_path.split("/")[-1]
     dwelling_path = os.path.join(
-        input_data_path, config_file["supplementary_data"]["dwelling_data"]
+        input_data_path,
+        config_file["supplementary_data"][data_edition]["dwelling_data"],
     )
 
     dwellings = pd.read_excel(
@@ -218,12 +231,13 @@ def get_offgas(input_data_path):
     Returns:
         pd.DataFrame: Dataframe containing off-gas postcodes.
     """
+    data_edition = input_data_path.split("/")[-1]
     off_gas_path = os.path.join(
-        input_data_path, config_file["supplementary_data"]["off_gas_data"]
+        input_data_path, config_file["supplementary_data"][data_edition]["off_gas_data"]
     )
     og = pd.read_excel(
         PROJECT_DIR / off_gas_path,
-        sheet_name="Off Gas Live PostCodes 22",
+        sheet_name=config_file["supplementary_data"][data_edition]["off_gas_sheet"],
     )
 
     og = og.rename(columns={"Post Code": "postcode"})
@@ -244,20 +258,28 @@ def get_rurality_by_oa(input_data_path):
     Returns:
         pd.DataFrame: Dataset with postcodes and ruralities.
     """
+    data_edition = input_data_path.split("/")[-1]
     oa_path = os.path.join(
-        input_data_path, config_file["supplementary_data"]["postcode_to_oa_data"]
+        input_data_path,
+        config_file["supplementary_data"][data_edition]["postcode_to_oa_data"],
     )
-    oa = pd.read_csv(
-        PROJECT_DIR / oa_path, encoding="latin-1"
-    )  # latin-1 as otherwise invalid byte
 
-    oa = oa[["pcd7", "oa11cd"]].rename(
-        columns={"pcd7": "postcode", "oa11cd": "oa_code"}
+    # Historical data requires a different encoding
+    if data_edition > "data_202310":
+        oa = pd.read_csv(PROJECT_DIR / oa_path)
+    else:
+        oa = pd.read_csv(
+            PROJECT_DIR / oa_path, encoding="latin-1"
+        )  # latin-1 as otherwise invalid byte
+
+    oa = oa[["pcd7", "oa21cd"]].rename(
+        columns={"pcd7": "postcode", "oa21cd": "oa_code"}
     )
     oa["postcode"] = oa["postcode"].str.replace(" ", "")
 
     rurality_path = os.path.join(
-        input_data_path, config_file["supplementary_data"]["rurality_data"]
+        input_data_path,
+        config_file["supplementary_data"][data_edition]["rurality_data"],
     )
     rural = pd.read_excel(
         PROJECT_DIR / rurality_path, engine="odf", sheet_name="OA11", skiprows=2
@@ -394,8 +416,9 @@ def get_electric_tenure(input_data_path):
     Returns:
         pd.DataFrame: Dataset of tenure counts for properties on electric heating in Wales.
     """
+    data_edition = input_data_path.split("/")[-1]
     tenure_path = os.path.join(
-        input_data_path, config_file["supplementary_data"]["tenure_data"]
+        input_data_path, config_file["supplementary_data"][data_edition]["tenure_data"]
     )
     data = pd.read_csv(PROJECT_DIR / tenure_path)
 
