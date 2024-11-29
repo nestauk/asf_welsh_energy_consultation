@@ -74,29 +74,25 @@ outputs/
 
 ## Historical analysis
 
-Versions/batches of data used for previous analysis are listed below.
+Versions of data used for previous analysis are listed below.
 
-October 2023 analysis (`/inputs/data/data_202310`):
+| Analysis      | EPC                                                               | MCS<sup>1</sup> | Postcodes<sup>2</sup>                                                                              | Postcode to OA<sup>3</sup>                                                                                                                                  | Off gas postcodes<sup>4</sup>                                                                                 | Rural-urban classification<sup>5</sup>                                                                             | Dwellings<sup>6</sup>                                                                                                                          | Tenure<sup>7</sup>                                                            |
+| ------------- | ----------------------------------------------------------------- | --------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| November 2024 | 2024 Q1 complete (preprocessed, and preprocessed and deduplicated | 241113          | [February 2024](https://geoportal.statistics.gov.uk/datasets/e14b1475ecf74b58804cf667b6740706)     | [February 2024](https://geoportal.statistics.gov.uk/datasets/ons::postcode-to-oa-2021-to-lsoa-to-msoa-to-lad-february-2024-best-fit-lookup-in-the-uk/about) | [September 2024](https://www.xoserve.com/help-centre/supply-points-metering/supply-point-administration-spa/) | [2011](https://www.gov.uk/government/statistics/2011-rural-urban-classification-lookup-tables-for-all-geographies) | [2021 census](https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/numberofdwellingsbyhousingcharacteristicsinenglandandwales) | [2021 census](https://www.ons.gov.uk/datasets/RM003/editions/2021/versions/1) |
+| October 2023  | 2023 Q2 complete (preprocessed, and preprocessed and deduplicated | 231009          | [August 2023](https://geoportal.statistics.gov.uk/datasets/487a5ba62c8b4da08f01eb3c08e304f6/about) | [May 2022](https://geoportal.statistics.gov.uk/datasets/e7824b1475604212a2325cd373946235/about)                                                             | [2022](https://www.xoserve.com/help-centre/supply-points-metering/supply-point-administration-spa/)           | [2011](https://www.gov.uk/government/statistics/2011-rural-urban-classification-lookup-tables-for-all-geographies) | [2021 census](https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/numberofdwellingsbyhousingcharacteristicsinenglandandwales) | [2021 census](https://www.ons.gov.uk/datasets/RM003/editions/2021/versions/1) |
+| April 2023    | 2022 Q4 complete (preprocessed)                                   | 230315          | ONS postcode directory. Date unknown.                                                              | ONS data. Date unknown.                                                                                                                                     | [September 2024](https://www.xoserve.com/help-centre/supply-points-metering/supply-point-administration-spa/) | [2011](https://www.gov.uk/government/statistics/2011-rural-urban-classification-lookup-tables-for-all-geographies) | Not used                                                                                                                                       | ONS data. Date unknown.                                                       |
 
-- EPC: 2023_Q2_complete (preprocessed, and preprocessed and deduplicated)
-- mcs_installations_231009.csv
-- mcs_installations_epc_full_231009.csv
-- dwellings_2021.xlsx - [Number of dwellings by housing characteristics in England and Wales 2021 (released 30 March 2023)](https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/numberofdwellingsbyhousingcharacteristicsinenglandandwales)
-- off-gas-live-postcodes-2022.xlsx - check [here](https://www.xoserve.com/a-to-z/) for updates
-- postcodes - [ONS Postcode Directory (August 2023)](https://geoportal.statistics.gov.uk/datasets/ons-postcode-directory-august-2023/about)
-- postcode_to_output_area.csv - [postcode to OA, LSOA, MSAO, LAD lookup (May 2022)](https://geoportal.statistics.gov.uk/datasets/e7824b1475604212a2325cd373946235)
-- rurality.ods - 2011 Rural Urban Classification for small area geographies, see [here](https://www.ons.gov.uk/methodology/geography/geographicalproducts/ruralurbanclassifications)
-- tenure.csv - [Accommodation type by type of central heating in household by tenure (28 March 2023)](https://www.ons.gov.uk/datasets/RM003/editions/2021/versions/1)
+# Data attributions
 
-April 2023 analysis (`/inputs/data/data_202304`):
-
-- EPC: 2022_Q4_complete (preprocessed)
-- mcs_installations_230315.csv
-- mcs_installations_epc_full_230315.csv
-- off-gas-live-postcodes-2022.xlsx - check [here](https://www.xoserve.com/a-to-z/) for updates
-- rurality.ods - 2011 Rural Urban Classification for small area geographies, see [here](https://www.ons.gov.uk/methodology/geography/geographicalproducts/ruralurbanclassifications)
-- postcodes ; postcode_to_output_area.csv ; tenure.csv - ONS data with unknown source date
-- dwellings data not historically used in this analysis
+1. MCS Installations Database. Date represents internal processing date.
+2. ONS Postcode Directory for the UK. Contains OS data © Crown copyright and database right 2024. Contains Royal Mail data © Royal Mail copyright and database right 2024.
+   Source: Office for National Statistics licensed under the Open Government Licence v.3.0
+3. ONS Postcode to OA to LSOA to MSOA to LAD Best Fit Lookup in the UK. Contains OS data © Crown copyright and database right 2024. Contains Royal Mail data © Royal Mail copyright and database right 2024.
+   Source: Office for National Statistics licensed under the Open Government Licence v.3.0
+4. Off-gas Postcode Register from Xoserve.
+5. Rural Urban Classification Lookup table. Contains public sector information licensed under the Open Government Licence v3.0.
+6. Number of dwellings by housing characteristics in England and Wales. Contains public sector information licensed under the Open Government Licence v3.0.
+7. Accommodation type by type of central heating in household by tenure. Contains public sector information licensed under the Open Government Licence v3.0.
 
 ## Contributor guidelines
 
