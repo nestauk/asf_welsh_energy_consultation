@@ -64,7 +64,7 @@ def get_countries(input_data_path):
     )
 
     # From 202411 analysis, we use the full postcode directory rather than the partitioned files
-    if data_edition > "data_202310":
+    if data_edition >= "data_202411":
         postcode_df = pd.read_csv(os.path.join(PROJECT_DIR, postcode_path))
         postcode_df = postcode_df.rename(
             columns={"pcd": "postcode", "osward": "la_code"}
