@@ -23,7 +23,7 @@ The remainder of the charts in the response can be produced from code in the rep
   directory where your local copy of the EPC data is/will be saved by replacing `<YOUR_LOCAL_DIR>` with the path to your "ASF_data" directory or equivalent.
   If you don't have a local directory for ASF core data, you can create a folder called "ASF_data" in your home directory.
   - You can specify which batch of EPC data to download and MCS data to load from S3 by passing the `--epc_batch` and `--mcs_batch` arguments, both
-    default to downloading/loading the newest data from S3, respectively.
+    default to downloading/loading the newest data from S3, respectively. Check the output info logs or set the batches manually to ensure expected batches used.
   - You can specify which supplementary data folder to use by passing the `--supp_data` argument. It defaults to using the latest supplementary data folder.
   - To recreate the full October 2023 analysis, set the `--calculate_average_installations` argument to `True`. This will calculate some additional numbers on MCS installations per year included in the October 2023 response. For other historical analyses, this argument is not required and defaults to `False`.
   - Run `python asf_welsh_energy_consultation/analysis/produce_plots_and_stats.py -h` for more info.
