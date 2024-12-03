@@ -265,7 +265,7 @@ def get_rurality_by_oa(input_data_path):
     )
 
     # Historical data requires a different encoding
-    if data_edition > "data_202310":
+    if data_edition >= "data_202411":
         oa = pd.read_csv(PROJECT_DIR / oa_path)
     else:
         oa = pd.read_csv(
