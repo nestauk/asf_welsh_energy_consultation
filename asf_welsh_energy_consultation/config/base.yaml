@@ -11,7 +11,7 @@ supplementary_data:
     rurality_data: "rurality.ods"
     tenure_data: "tenure.csv"
     dwelling_data: "dwellings_2021.xlsx"
-  data_202304:
+  data_202310:
     postcode_dir: "postcodes"
     off_gas_data: "off-gas-live-postcodes-2022.xlsx"
     off_gas_sheet: "Off Gas Live PostCodes 22"
@@ -19,3 +19,10 @@ supplementary_data:
     rurality_data: "rurality.ods"
     tenure_data: "tenure.csv"
     dwelling_data: "dwellings_2021.xlsx"
+  data_202304:
+    postcode_dir: "postcodes"
+    off_gas_data: "off-gas-live-postcodes-2022.xlsx"
+    off_gas_sheet: "Off Gas Live PostCodes 22"
+    postcode_to_oa_data: "postcode_to_output_area.csv"
+    rurality_data: "rurality.ods"
+    tenure_data: "tenure.csv"
